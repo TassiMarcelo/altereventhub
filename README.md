@@ -1,8 +1,10 @@
 # Nombres
+
 Baccarini Camila
 Cendoya Ramiro 
 Vidmar Ian
 Tassi Marcelo
+
 # Eventhub
 
 Aplicación web para venta de entradas utilizada en la cursada 2025 de Ingeniería y Calidad de Software. UTN-FRLP

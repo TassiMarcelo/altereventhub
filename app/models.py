@@ -73,3 +73,14 @@ class Event(models.Model):
         self.organizer = organizer or self.organizer
 
         self.save()
+
+
+class Venue(models.Model):
+    name=models.CharField(max_length=200)
+    address= models.CharField(max_length=200)
+    city= models.CharField(max_length=200)
+    capacity= models.IntegerField
+    contact=models.CharField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    bl_baja= models.BooleanField(default=False)

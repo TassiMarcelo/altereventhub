@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-
+import uuid
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)
@@ -72,4 +72,65 @@ class Event(models.Model):
         self.scheduled_at = scheduled_at or self.scheduled_at
         self.organizer = organizer or self.organizer
 
+        self.save()
+
+
+# Realizar la alta, baja y modificación. El formulario de creación y edición debe tener validaciones server-side.
+'''
+[ok] ticket_code es un valor autogenerado en el backend
+
+[pendiente] Un usuario REGULAR puede comprar, editar y eliminar sus tickets. 
+
+[pendiente] Hacer formulario para datos de tarjeta
+
+[pendiente] Un usuario organizador puede eliminar tickets de sus eventos. (si el usuario es de tipo organizador, puede eliminar tickets)
+
+[pendiente] Más adelante se agregaron controles de tiempo. Por ejemplo, podrá editar y eliminar dentro de los 30
+minutos de que la entrada fue comprada (ESTO NO ES OBLIGATORIO)
+'''
+class Ticket(models.Model):
+    quantity = models.IntegerField()
+    class Type(models.TextChoices):
+        GENERAL = 'GENERAL', 'General'
+        VIP = 'VIP', 'VIP'
+    type = models.CharField( 
+        max_length=7,          
+        choices=Type.choices,
+        default=Type.GENERAL,
+    )
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="tickets") # Desde evento, podemos acceder a los tickets gracias a related_name
+    buy_date = models.DateTimeField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tickets") # El usuario comprador del evento
+    ticket_code = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    bl_baja = models.BooleanField(default=False) # Campo para el borrado lógico
+
+    def __str__(self) -> str:
+        return str(self.ticket_code)
+    
+    @classmethod
+    def new(cls, buy_date, quantity, type, event, user): # Alta
+
+        # TODO: Validaciones
+
+        # Asociar al comprador (User) y al evento (Event)
+        ticket = cls.objects.create(
+            buy_date=buy_date,
+            quantity=quantity,
+            type=type,
+            event=event,
+            user=user
+            )
+        return ticket
+
+    def update(self, buy_date=None, quantity=None, type=None, event=None, user=None): # Modificación
+        self.buy_date = buy_date or self.buy_date
+        self.quantity = quantity or self.quantity
+        self.type = type or self.type
+        self.event = event or self.event
+        self.user = user or self.user
+
+        self.save()
+
+    def soft_delete(self): # Baja lógica
+        self.bl_baja = True
         self.save()

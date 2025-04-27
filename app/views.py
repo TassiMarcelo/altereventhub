@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .models import Event, User
+from .models import Event, User, Ticket
 
 
 def register(request):
@@ -125,3 +125,45 @@ def event_form(request, id=None):
         "app/event_form.html",
         {"event": event, "user_is_organizer": request.user.is_organizer},
     )
+
+
+@login_required
+def ticket_buy(request):
+    user = request.user
+
+    if request.method == "POST":
+        quantity = request.POST.get("quantity")
+        type = request.POST.get("type")
+        event_id = request.POST.get("eventId")
+
+        # Chequear que esten todos los campos llenos
+        if not all([quantity, type, event_id]):
+            # Algún campo faltó
+            print("Todos los campos son obligatorios.")
+
+        # Chequear que quantity sea un entero positivo
+        valError = "La cantidad debe ser un número entero positivo."
+        try:
+            if quantity <= 0:
+                raise ValueError(valError)
+        except ValueError:
+            print(valError)
+
+        # Chequear que el tipo de ticket sea valido
+        if type not in Ticket.Type.values:
+            print("El tipo de ticket no es válido.")
+
+        event = get_object_or_404(Event, pk=event_id)
+
+        ticket = Ticket.new(
+            buy_date=timezone.now(),
+            quantity=quantity,
+            type=type,
+            event=event,
+            user=user
+        )
+
+        print(f"Ticket comprado! Codigo: {str(ticket.ticket_code)}")
+
+    return redirect("events")
+

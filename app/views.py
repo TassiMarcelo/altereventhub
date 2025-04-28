@@ -128,23 +128,22 @@ def event_form(request, id=None):
 
 
 @login_required
-def ticket_buy(request):
+def ticket_buy(request, eventId):
     user = request.user
 
     if request.method == "POST":
         quantity = request.POST.get("quantity")
         type = request.POST.get("type")
-        event_id = request.POST.get("eventId")
 
         # Chequear que esten todos los campos llenos
-        if not all([quantity, type, event_id]):
+        if not all([quantity, type]):
             # Algún campo faltó
             print("Todos los campos son obligatorios.")
 
         # Chequear que quantity sea un entero positivo
         valError = "La cantidad debe ser un número entero positivo."
         try:
-            if quantity <= 0:
+            if int(quantity) <= 0:
                 raise ValueError(valError)
         except ValueError:
             print(valError)
@@ -153,7 +152,7 @@ def ticket_buy(request):
         if type not in Ticket.Type.values:
             print("El tipo de ticket no es válido.")
 
-        event = get_object_or_404(Event, pk=event_id)
+        event = get_object_or_404(Event, pk=eventId)
 
         ticket = Ticket.new(
             buy_date=timezone.now(),
@@ -167,3 +166,11 @@ def ticket_buy(request):
 
     return redirect("events")
 
+def ticket_form(request, id):
+    # Cuando intento acceder al ticket form (formulario de tarjeta de credito para comprar tickets), necesito saber si el evento existe
+    event = get_object_or_404(Event, pk=id)
+    return render(
+        request,
+        "app/ticket_form.html",
+        {"event": event} # Pasar el contexto del evento a la parte del formulario de compra para que el usuario pueda ver que evento esta comprando, y para armar la solicitud de compra.
+    )

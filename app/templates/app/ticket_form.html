@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-5">
+    <div class="card shadow-lg">
+        <div class="card-header text-center">
+            <h2>Comprar Entradas para "{{ event.title }}"</h2>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">{{ event.description }}</p>
+            <p><strong>Fecha:</strong> {{ event.scheduled_at|date:"d/m/Y H:i" }}</p>
+            <p><strong>Organizado por:</strong> {{ event.organizer.username }}</p>
+
+            <hr>
+
+            <form method="POST" action="{% url 'ticket_buy' event.id %}">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="type" class="form-label">Tipo de Entrada</label>
+                    <select class="form-select" id="type" name="type" required>
+                        <option value="GENERAL">General</option>
+                        <option value="VIP">VIP</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="quantity" class="form-label">Cantidad</label>
+                    <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                </div>
+
+                <hr class="my-4">
+
+                <h5 class="mb-3">Datos de la Tarjeta de Crédito</h5>
+
+                <div class="mb-3">
+                    <label for="card_number" class="form-label">Número de Tarjeta</label>
+                    <input type="text" class="form-control" id="card_number" name="card_number" maxlength="16" pattern="\d{16}" placeholder="1234 5678 9012 3456" required>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="card_expiry" class="form-label">Fecha de Expiración (MM/AA)</label>
+                        <input type="text" class="form-control" id="card_expiry" name="card_expiry" pattern="\d{2}/\d{2}" placeholder="MM/AA" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="card_cvv" class="form-label">CVV</label>
+                        <input type="text" class="form-control" id="card_cvv" name="card_cvv" maxlength="4" pattern="\d{3,4}" placeholder="123" required>
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">Comprar</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

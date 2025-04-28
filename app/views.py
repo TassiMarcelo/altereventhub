@@ -171,3 +171,17 @@ def delete_comment(request, comment_id):
     return redirect('event_detail', id=comment.event.id)
 
 
+@login_required
+def organizer_comments(request):
+    if not request.user.is_organizer:
+        return redirect('events')
+    
+    # Obtener solo los eventos creados por este organizador
+    organizer_events = Event.objects.filter(organizer=request.user)
+    
+    # Obtener todos los comentarios de esos eventos
+    comments = Comment.objects.filter(event__in=organizer_events).select_related('user', 'event').order_by('-created_at')
+    
+    return render(request, 'comments/organizer_comments.html', {
+        'comments': comments
+    })

@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-
+from django.utils import timezone
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)
@@ -73,3 +73,35 @@ class Event(models.Model):
         self.organizer = organizer or self.organizer
 
         self.save()
+
+
+#models para comment
+
+class Comment(models.Model):
+    title = models.CharField(max_length=100, verbose_name="Título")
+    text = models.TextField(verbose_name="Texto del comentario")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Fecha de creación")
+    
+    # Relación con User (un usuario muchos comentarios)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="comments",
+        verbose_name="Usuario"
+    )
+    
+    # Relación con Event (un evento muchos comentarios)
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name="comments",
+        verbose_name="Evento"
+    )
+
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
+
+    class Meta:
+        ordering = ['-created_at']  # Ordenar por fecha descendente
+        verbose_name = "Comentario"
+        verbose_name_plural = "Comentarios"

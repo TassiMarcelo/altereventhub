@@ -26,6 +26,13 @@ class User(AbstractUser):
 
         return errors
 
+class Category(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name    
+
 
 class Event(models.Model):
     title = models.CharField(max_length=200)

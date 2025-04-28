@@ -14,7 +14,7 @@
 
             <div class="card">
                 <div class="card-body">
-                    <form action="{% url 'event_form' %}" method="POST">
+                    <form action="{% if event.id %}{% url 'event_edit' event.id %}{% else %}{% url 'event_form' %}{% endif %}" method="POST">
                         {% csrf_token %}
                         <div class="vstack gap-3">
                             <div>
@@ -43,7 +43,7 @@
                                         id="date"
                                         required=""
                                         type="date"
-                                        value="{{ event.scheduled_at|date:'Y-m-d'}}"
+                                        value="{{ event.scheduled_at|date:'Y-m-d' }}"
                                         name="date" />
                                 </div>
                                 <div class="col-md-6">
@@ -53,17 +53,24 @@
                                         id="time"
                                         required=""
                                         type="time"
-                                        value="{{ event.scheduled_at|date:'g:i'}}"
+                                        value="{{ event.scheduled_at|time:'H:i' }}"
                                         name="time" />
                                 </div>
                             </div>
                             <div>
-                                <button type="submit" class="btn btn-primary">Crear Evento</button>
+                                <button type="submit" class="btn btn-primary">
+                                    {% if event.id %}
+                                        Actualizar Evento
+                                    {% else %}
+                                        Crear Evento
+                                    {% endif %}
+                                </button>
                             </div>
                         </div>
                     </form>
                 </div>
             </div>
+
         </div>
     </div>
 </div>

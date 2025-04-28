@@ -145,3 +145,29 @@ def add_comment(request, event_id):
     else:
         form = CommentForm()
     return render(request, 'comments/add_comment.html', {'form': form, 'event': event})
+
+@login_required
+def edit_comment(request, comment_id):
+    comment = get_object_or_404(Comment, pk=comment_id, user=request.user)
+    if request.method == 'POST':
+        form = CommentForm(request.POST, instance=comment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '¡Comentario actualizado!')
+            return redirect('event_detail', id=comment.event.id)
+    else:
+        form = CommentForm(instance=comment)
+    return render(request, 'comments/edit_comment.html', {'form': form, 'comment': comment})
+
+
+@login_required
+def delete_comment(request, comment_id):
+    comment = get_object_or_404(Comment, pk=comment_id)
+    if request.user == comment.user or (request.user.is_organizer and request.user == comment.event.organizer):
+        comment.delete()
+        messages.success(request, 'Comentario eliminado.')
+    else:
+        messages.error(request, 'No tienes permiso para esto.')
+    return redirect('event_detail', id=comment.event.id)
+
+

@@ -3,6 +3,9 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.contrib import messages
+from .models import Comment, Event
+from .forms import CommentForm
 
 from .models import Event, User
 
@@ -125,3 +128,20 @@ def event_form(request, id=None):
         "app/event_form.html",
         {"event": event, "user_is_organizer": request.user.is_organizer},
     )
+
+#crear comentario
+@login_required
+def add_comment(request, event_id):
+    event = get_object_or_404(Event, pk=event_id)
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.user = request.user
+            comment.event = event
+            comment.save()
+            messages.success(request, '¡Comentario publicado!')
+            return redirect('event_detail', id=event.id)
+    else:
+        form = CommentForm()
+    return render(request, 'comments/add_comment.html', {'form': form, 'event': event})

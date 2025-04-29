@@ -26,16 +26,16 @@
                             <td>{{ comment.created_at|date:"d/m/Y H:i" }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{% url 'event_detail' comment.event.id %}#comment-{{ comment.id }}" 
-                                       class="btn btn-outline-primary"
-                                       title="Ver comentario">
+                                    <a href="{% url 'view_comment' comment.id %}" 
+                                        class="btn btn-outline-primary"
+                                        title="Ver comentario">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="{% url 'delete_comment' comment.id %}" 
-                                       class="btn btn-outline-danger"
-                                       title="Eliminar"
-                                       onclick="return confirm('¿Eliminar este comentario?')">
-                                        <i class="bi bi-trash"></i>
+                                    <a href="{% url 'delete_comment' comment.id %}?next={% url 'organizer_comments' %}" 
+                                        class="btn btn-outline-danger"
+                                        title="Eliminar"
+                                        onclick="return confirm('¿Eliminar este comentario?')">
+                                            <i class="bi bi-trash"></i>
                                     </a>
                                 </div>
                             </td>

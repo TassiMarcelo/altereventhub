@@ -16,6 +16,6 @@ urlpatterns = [
     path('events/<int:event_id>/comment/add/', views.add_comment, name='add_comment'),# ruta para comentario
     path('comments/<int:comment_id>/edit/', views.edit_comment, name='edit_comment'),
     path('comments/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
-    
+    path('comentario/<int:comment_id>/', views.view_comment, name='view_comment'),
     path('organizer/comments/', views.organizer_comments, name='organizer_comments'),
 ]

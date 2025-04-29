@@ -160,14 +160,22 @@ def edit_comment(request, comment_id):
     return render(request, 'comments/edit_comment.html', {'form': form, 'comment': comment})
 
 
+
 @login_required
 def delete_comment(request, comment_id):
-    comment = get_object_or_404(Comment, pk=comment_id)
-    if request.user == comment.user or (request.user.is_organizer and request.user == comment.event.organizer):
-        comment.delete()
-        messages.success(request, 'Comentario eliminado.')
-    else:
-        messages.error(request, 'No tienes permiso para esto.')
+    comment = get_object_or_404(Comment, id=comment_id)
+
+    if request.user != comment.user and request.user != comment.event.organizer:
+        return HttpResponseForbidden()
+
+    comment.delete()
+
+    # Redirigir a la URL indicada en 'next', si existe
+    next_url = request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+    
+    # Si no hay 'next', redirigir al detalle del evento como fallback
     return redirect('event_detail', id=comment.event.id)
 
 
@@ -185,3 +193,8 @@ def organizer_comments(request):
     return render(request, 'comments/organizer_comments.html', {
         'comments': comments
     })
+    
+    
+def view_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    return render(request, 'comments/view_comment.html', {'comment': comment})

@@ -78,6 +78,7 @@ class Event(models.Model):
 
 class RefundRequest(models.Model):
     approved = models.BooleanField(default=False)
+    #convertir el ticket_code de ticket a string para compararlo con este str(ticket.ticket_code) == refund_request.ticket_code
     ticket_code = models.CharField(max_length=255)
     reason = models.TextField()
     approval_date = models.DateTimeField(null=True, blank=True)

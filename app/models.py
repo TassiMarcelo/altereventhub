@@ -1,10 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-<<<<<<< HEAD
 import uuid
-=======
 from django.utils import timezone
->>>>>>> marce
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)

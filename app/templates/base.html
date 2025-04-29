@@ -49,6 +49,13 @@
                             <li class="nav-item">
                                 {% navbar_link 'events' 'Eventos' %}
                             </li>
+                            {% if user.is_authenticated and user.is_organizer %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'organizer_comments' %}">
+                                    <i class="bi bi-chat-text"></i> Comentarios
+                                </a>
+                            </li>
+                            {% endif %}
                         </ul>
                     </div>
 

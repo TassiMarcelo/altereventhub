@@ -54,4 +54,86 @@
     </div>
 
 </div>
+
+<!--
+<div class="mt-4">
+    <h3>Comentarios</h3>
+    {% for comment in event.comments.all %}
+    <div class="card mb-2">
+        <div class="card-body">
+            <h5>{{ comment.title }}</h5>
+            <p>{{ comment.text }}</p>
+            <small>Por: {{ comment.user.username }} - {{ comment.created_at }}</small>
+            {% if user == comment.user or user.is_organizer %}
+            <div class="mt-2">
+                <a href="{% url 'edit_comment' comment.id %}" class="btn btn-sm btn-outline-primary">Editar</a>
+                <a href="{% url 'delete_comment' comment.id %}" class="btn btn-sm btn-outline-danger">Eliminar</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <p>No hay comentarios aún.</p>
+    {% endfor %}
+    <a href="{% url 'add_comment' event.id %}" class="btn btn-success mt-2">Añadir Comentario</a>
+</div> -->
+
+<div class="mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Comentarios ({{ event.comments.count }})</h5>
+            {% for comment in event.comments.all %}
+                <div class="mb-3 border-bottom pb-2">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>{{ comment.user.username }}</strong>
+                            <small class="text-muted">{{ comment.created_at|date:"d M Y, H:i" }}</small>
+                        </div>
+                        {% if user == comment.user or user == event.organizer %}
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                 {% if user == comment.user %}
+                                 <li><a class="dropdown-item" href="{% url 'edit_comment' comment.id %}">Editar</a></li>
+                                 {% endif %}
+
+                                 {% if user == comment.user or user == event.organizer %}
+                                 <li>
+                                        <a class="dropdown-item text-danger" href="{% url 'delete_comment' comment.id %}" onclick="return confirm('¿Estás seguro de que deseas eliminar este comentario?');">
+                                            Eliminar
+                                        </a>
+                                    </li>
+                                 {% endif %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <h6 class="mt-2">{{ comment.title }}</h6>
+                    <p>{{ comment.text }}</p>
+                </div>
+            {% empty %}
+                <p class="text-muted">No hay comentarios aún.</p>
+            {% endfor %}
+
+            <!-- Formulario para agregar un comentario -->
+            <form action="{% url 'add_comment' event.id %}" method="post" class="mt-4">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="title" class="form-label">Título del comentario *</label>
+                    <input type="text" class="form-control" id="title" name="title" placeholder="Escribe un título para tu comentario..." required>
+                </div>
+                <div class="mb-3">
+                    <label for="text" class="form-label">Contenido del comentario *</label>
+                    <textarea class="form-control" id="text" name="text" rows="3" placeholder="Escribe tu comentario aquí..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Publicar comentario</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
 {% endblock %}

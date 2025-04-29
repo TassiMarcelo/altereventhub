@@ -16,4 +16,9 @@ urlpatterns = [
     path("ticket/<int:id>/form/", views.ticket_form, name="ticket_form"), # El formulario de tarjeta de credito
     path("ticket/<int:eventId>/buy/", views.ticket_buy, name="ticket_buy"), # El POST para comprar tickets
     
+    path('events/<int:event_id>/comment/add/', views.add_comment, name='add_comment'),# ruta para comentario
+    path('comments/<int:comment_id>/edit/', views.edit_comment, name='edit_comment'),
+    path('comments/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
+    path('comentario/<int:comment_id>/', views.view_comment, name='view_comment'),
+    path('organizer/comments/', views.organizer_comments, name='organizer_comments'),
 ]

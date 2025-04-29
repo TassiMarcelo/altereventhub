@@ -3,6 +3,9 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.contrib import messages
+from .models import Comment, Event
+from .forms import CommentForm
 
 from .models import Event, User, Ticket
 
@@ -174,3 +177,72 @@ def ticket_form(request, id):
         "app/ticket_form.html",
         {"event": event} # Pasar el contexto del evento a la parte del formulario de compra para que el usuario pueda ver que evento esta comprando, y para armar la solicitud de compra.
     )
+#crear comentario
+@login_required
+def add_comment(request, event_id):
+    event = get_object_or_404(Event, pk=event_id)
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.user = request.user
+            comment.event = event
+            comment.save()
+            messages.success(request, '¡Comentario publicado!')
+            return redirect('event_detail', id=event.id)
+    else:
+        form = CommentForm()
+    return render(request, 'comments/add_comment.html', {'form': form, 'event': event})
+
+@login_required
+def edit_comment(request, comment_id):
+    comment = get_object_or_404(Comment, pk=comment_id, user=request.user)
+    if request.method == 'POST':
+        form = CommentForm(request.POST, instance=comment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '¡Comentario actualizado!')
+            return redirect('event_detail', id=comment.event.id)
+    else:
+        form = CommentForm(instance=comment)
+    return render(request, 'comments/edit_comment.html', {'form': form, 'comment': comment})
+
+
+
+@login_required
+def delete_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+
+    if request.user != comment.user and request.user != comment.event.organizer:
+        return HttpResponseForbidden()
+
+    comment.delete()
+
+    # Redirigir a la URL indicada en 'next', si existe
+    next_url = request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+    
+    # Si no hay 'next', redirigir al detalle del evento como fallback
+    return redirect('event_detail', id=comment.event.id)
+
+
+@login_required
+def organizer_comments(request):
+    if not request.user.is_organizer:
+        return redirect('events')
+    
+    # Obtener solo los eventos creados por este organizador
+    organizer_events = Event.objects.filter(organizer=request.user)
+    
+    # Obtener todos los comentarios de esos eventos
+    comments = Comment.objects.filter(event__in=organizer_events).select_related('user', 'event').order_by('-created_at')
+    
+    return render(request, 'comments/organizer_comments.html', {
+        'comments': comments
+    })
+    
+    
+def view_comment(request, comment_id):
+    comment = get_object_or_404(Comment, id=comment_id)
+    return render(request, 'comments/view_comment.html', {'comment': comment})

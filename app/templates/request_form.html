@@ -1,24 +1,84 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulario de Reembolso</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center; /* Centra horizontalmente */
-            align-items: center;    /* Centra verticalmente */
-            min-height: 100vh;      /* Asegura que el body ocupe al menos el alto de la ventana */
-            margin: 0;             /* Elimina los márgenes predeterminados del body */
-        }
-        h1 {
-            text-align: center;    /* Centra el texto dentro del h1 */
-            white-space: pre-line; /* Permite saltos de línea con <br> o saltos de línea en el texto */
-        }
-    </style>
-</head>
-<body>
-    <h1>Formulario de Reembolsos<br>en desarrollo</h1>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1 class="mb-4">            
+                    Solicitar reembolso
+            </h1>
+            <div class="card">
+                <div class="card-body">
+                    <form action="{% url 'solicitar_reembolso' %}" method="POST">
+                        {% csrf_token %}
+                        <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill" style="font-size: 1.5em; color: #0d6efd; margin-right: 10px;"></i>
+                            <span style="color: #0d6efd;">
+                                Puedes solicitar un reembolso hasta 48 horas antes del evento. Una vez procesada la solicitud, el reembolso se realizará en un plazo de 7 a 14 días hábiles.
+                            </span>
+                        </div>
+                        <div class="vstack gap-3">
+                            <div>
+                                <label for="ticket_code" class="form-label">Código del ticket</label>
+                                <input class="form-control"
+                                    id="ticket_code"
+                                    required=""
+                                    type="text"
+                                    name="ticket_code" />
+                            </div>
+                            <div>
+                                <label for="refund_reason" class="form-label">Motivo del reembolso</label>
+                                <select class="form-select" id="refund_reason" name="reason" required>
+                                    <option value="" disabled selected>Selecciona un motivo</option>
+                                    <option value="no_asistencia">Impedimento para asistir</option>
+                                    <option value="evento_cancelado">Evento modificado</option>
+                                    <option value="error_compra">Error en la compra</option>
+                                </select>
+                            </div>                            
+                            <div>
+                                <label for="description" class="form-label">Detalles adicionales</label>
+                                <textarea
+                                    class="form-control"
+                                    id="description"
+                                    name="details"
+                                    rows="4"
+                                    placeholder="Proporciona más información sobre tu solicitud de reembolso..."></textarea>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="refundPolicy" required>
+                                <label class="form-check-label" for="refundPolicy">
+                                    Entiendo y acepto la <a href="#" data-bs-toggle="modal" data-bs-target="#refundPolicyModal" style="color: #0d6efd;">política de reembolsos</a>.
+                                </label>
+                            </div>
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary">Enviar solicitud</button>
+                            </div>
+                       </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="refundPolicyModal" tabindex="-1" aria-labelledby="refundPolicyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="refundPolicyModalLabel">Política de reembolsos</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <ul>
+            <li>Reembolso del 100% hasta 7 días antes del evento.</li>
+            <li>Reembolso del 50% entre 2 y 7 días antes del evento.</li>
+            <li>Sin reembolso a menos de 48 horas del evento.</li>
+            <li>El reembolso se realiza al mismo método de pago usado en la compra.</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

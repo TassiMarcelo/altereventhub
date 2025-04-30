@@ -165,3 +165,55 @@ class Comment(models.Model):
         ordering = ['-created_at']  # Ordenar por fecha descendente
         verbose_name = "Comentario"
         verbose_name_plural = "Comentarios"
+# intervengo
+
+class RefundRequest(models.Model):
+    approved = models.BooleanField(default=False)
+    #convertir el ticket_code de ticket a string para compararlo con este str(ticket.ticket_code) == refund_request.ticket_code
+    ticket_code = models.CharField(max_length=255)
+    reason = models.TextField()
+    approval_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refund_requests")
+
+    def __str__(self):
+        return f"Refund {self.ticket_code}"
+
+    @classmethod
+    def validate(cls, ticket_code, reason):
+        errors = {}
+
+        if ticket_code == "":
+            errors["ticket_code"] = "Por favor ingrese el código del ticket"
+
+        if reason == "":
+            errors["reason"] = "Por favor ingrese el motivo del reembolso"
+
+        return errors
+
+    @classmethod
+    def new(cls, ticket_code, reason, requester):
+        errors = cls.validate(ticket_code, reason)
+
+        if errors:
+            return False, errors
+
+        cls.objects.create(
+            ticket_code=ticket_code,
+            reason=reason,
+            requester=requester,
+        )
+
+        return True, None
+
+    def approve(self):
+        self.approved = True
+        self.approval_date = timezone.now()
+        self.save()
+
+    def update(self, ticket_code=None, reason=None, approved=None, approval_date=None):
+        if ticket_code:
+            self.ticket_code = ticket_code
+        if reason:
+            self.reason = reason
+        self.save()

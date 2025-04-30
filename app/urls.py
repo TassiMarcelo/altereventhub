@@ -21,4 +21,5 @@ urlpatterns = [
     path('comments/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
     path('comentario/<int:comment_id>/', views.view_comment, name='view_comment'),
     path('organizer/comments/', views.organizer_comments, name='organizer_comments'),
+    path('reembolso/solicitar/', views.solicitar_reembolso, name='solicitar_reembolso'),
 ]

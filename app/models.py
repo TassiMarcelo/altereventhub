@@ -124,5 +124,12 @@ class Venue(models.Model):
         self.bl_baja= True
         self.save()
 
+    def editarVenue(self,name,address,city,capacity,contact):
+        self.name= name or self.name
+        self.address=address or self.address
+        self.city=city or self.city
+        self.capacity= capacity or self.capacity
+        self.contact=contact or self.contact
+        self.save()
         
 

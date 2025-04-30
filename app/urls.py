@@ -18,4 +18,5 @@ urlpatterns = [
     path("venue/", views.venue, name="venue"),
     path("venue/create/", views.venue_form, name="venue_form"),
     path("venue/<int:id>/delete/", views.venue_baja, name="venue_delete"),
+    path("venue/<int:id>/edit/", views.venue_form, name="venue_edit"),
 ]

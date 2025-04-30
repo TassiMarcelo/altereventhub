@@ -150,11 +150,28 @@ def venue_form(request, id=None):
         contacto= request.POST.get("contacto")
         if id is None:
             Venue.newVenue(nombre, direccion, ciudad,capacidad,contacto)
-            messages.success(request, f'Se Creo correctamente la ubicación "{nombre}".')
+            messages.success(request, f'Se creo correctamente la ubicación "{nombre}".')
             return redirect("venue")
-   
+        else:
+            venue = get_object_or_404(Venue, pk=id)
+            venue.editarVenue(nombre, direccion, ciudad, capacidad,contacto)
+            messages.success(request, f'Se modifico correctamente la ubicación "{venue.name}".')
+            return redirect("venue")
 
-    return render(request,"app/venue_form.html")
+    venue = {}
+    if id is not None:
+        try:
+            venue = Venue.objects.get(pk=id)
+            if venue.bl_baja:
+                messages.error(request, f"No se puede acceder a la ubicación.")
+                return redirect("venue")
+            
+        except Venue.DoesNotExist:
+            messages.error(request, f"La ubicación solicitada no existe.")
+            return redirect("venue")
+        
+        
+    return render(request,"app/venue_form.html", {"venue":venue})
 
 @login_required
 def venue_baja(request,id=None):

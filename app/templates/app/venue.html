@@ -7,19 +7,25 @@
 
 <div class="container">
     {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+     {% for message in messages %}
+          
+                {% if message.tags == 'error' %}
+                    <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert" >
+                {% else %}
+                     <div class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
+                {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
             </div>
         {% endfor %}
     {% endif %}
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Ubicaciones</h1>
+        <h1><i class="bi bi-geo-alt"></i> Ubicaciones</h1>
         {% if user_is_organizer %}
         <a href="{% url 'venue_form' %}"  class="btn btn-primary">
             <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
-            Crear Ubicacion
+            Crear Ubicacion<i class="bi bi-geo-alt"></i>
         </a>
         {% endif %}
     </div>
@@ -47,18 +53,20 @@
                     <td>
                         <div class="hstack gap-1">
                             {% if user_is_organizer %}
-                                                           
-                            <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-id="{{ venue.id }}" data-name="{{ venue.name }}" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="bi bi-trash" aria-hidden="true"></i></button>
-
+                           
+                                <a href="{% url 'venue_edit' venue.id %}" class="btn btn-sm btn-outline-primary rounded-3" ><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                <button type="button" class="btn btn-sm btn-outline-danger delete-btn rounded-3 " data-id="{{ venue.id }}" data-name="{{ venue.name }}" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="bi bi-trash" aria-hidden="true"></i></button>
+                                
                             {% endif %}
                         </div>
-                </td>
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
-<!--Modal-->
+<!--Modal Eliminar-->
+
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">

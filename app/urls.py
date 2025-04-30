@@ -21,4 +21,12 @@ urlpatterns = [
     path('comments/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
     path('comentario/<int:comment_id>/', views.view_comment, name='view_comment'),
     path('organizer/comments/', views.organizer_comments, name='organizer_comments'),
+    path('reembolso/solicitar/', views.solicitar_reembolso, name='solicitar_reembolso'),
+    path('refund/request/', views.solicitar_reembolso, name='solicitar_reembolso'),
+
+    path('event/<int:event_id>/rating/create/', views.create_rating, name='create_rating'),
+    path('event/<int:event_id>/rating/<int:rating_id>/update/', views.update_rating, name='update_rating'),
+    path('event/<int:event_id>/rating/<int:rating_id>/delete/', views.delete_rating, name='delete_rating'),
+    path('event/<int:event_id>/ratings/', views.list_ratings, name='list_ratings'),
+
 ]

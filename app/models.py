@@ -2,6 +2,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
 from django.utils import timezone
+from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
+
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)
@@ -165,3 +168,80 @@ class Comment(models.Model):
         ordering = ['-created_at']  # Ordenar por fecha descendente
         verbose_name = "Comentario"
         verbose_name_plural = "Comentarios"
+# intervengo
+
+class RefundRequest(models.Model):
+    approved = models.BooleanField(default=False)
+    #convertir el ticket_code de ticket a string para compararlo con este str(ticket.ticket_code) == refund_request.ticket_code
+    ticket_code = models.CharField(max_length=255)
+    reason = models.CharField(max_length=100)
+    details = models.TextField(blank=True, default="")
+    approval_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refund_requests")
+
+    def __str__(self):
+        return f"Refund {self.ticket_code}"
+
+    @classmethod
+    def validate(cls, ticket_code, reason):
+        errors = {}
+
+        if ticket_code == "":
+            errors["ticket_code"] = "Por favor ingrese el código del ticket"
+
+        if reason == "":
+            errors["reason"] = "Por favor ingrese el motivo del reembolso"
+
+        return errors
+
+    @classmethod
+    def new(cls, ticket_code, reason, details, requester):
+        errors = cls.validate(ticket_code, reason)
+
+        if errors:
+            return False, errors
+
+        cls.objects.create(
+            ticket_code=ticket_code,
+            reason=reason,
+            details=details,
+            requester=requester,
+        )
+
+        return True, None
+
+    def approve(self):
+        self.approved = True
+        self.approval_date = timezone.now()
+        self.save()
+
+    def update(self, ticket_code=None, reason=None, approved=None, approval_date=None):
+        if ticket_code:
+            self.ticket_code = ticket_code
+        if reason:
+            self.reason = reason
+class Rating(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    title = models.CharField(max_length=100)
+    text = models.TextField(blank=True)
+    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    created_at = models.DateTimeField(auto_now_add=True)
+    bl_baja = models.BooleanField(default=False)
+    is_current = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+        models.UniqueConstraint(
+            fields=['user', 'event'],
+            condition=models.Q(is_current=True, bl_baja=False),
+            name='unique_active_rating_per_user_event'
+        )
+    ]
+    #Eliminacion logica
+    def soft_delete(self):
+        """Marcar como eliminado lógicamente"""
+        self.bl_baja = True
+        self.is_current = False
+        self.save()

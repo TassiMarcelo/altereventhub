@@ -246,8 +246,8 @@ def organizer_comments(request):
 def view_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
     return render(request, 'comments/view_comment.html', {'comment': comment})
-def solicitar_reembolso(request):
-    return render(request, 'request_form.html')
+
+
 @login_required
 def solicitar_reembolso(request):
     if request.method == "POST":
@@ -276,3 +276,6 @@ def solicitar_reembolso(request):
 
 
     return render(request, "request_form.html")
+
+def my_refund(request):
+    return render(request, 'my_refund.html')

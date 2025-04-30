@@ -15,12 +15,19 @@
                 Crear Evento
             </a>
         {% else %}
-            <a
-                href="{% url 'solicitar_reembolso' %}"
-                class="btn btn-primary"
-            >
-                Solicitar reembolso
-            </a>
+           <div class="dropdown">
+               <button class="btn btn-primary dropdown-toggle" type="button" id="reembolsoDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                   Reembolsos
+               </button>
+               <ul class="dropdown-menu" aria-labelledby="reembolsoDropdown">
+                   <li>
+                      <a class="dropdown-item" href="{% url 'solicitar_reembolso' %}">Solicitar reembolso</a>
+                   </li>
+                   <li>
+                      <a class="dropdown-item" href="{% url 'my_refund' %}">Mis reembolsos</a>
+                   </li>
+               </ul>
+            </div>
         {% endif %}
     </div>
     <table class="table">

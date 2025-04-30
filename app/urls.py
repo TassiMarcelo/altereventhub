@@ -23,4 +23,5 @@ urlpatterns = [
     path('organizer/comments/', views.organizer_comments, name='organizer_comments'),
     path('reembolso/solicitar/', views.solicitar_reembolso, name='solicitar_reembolso'),
     path('refund/request/', views.solicitar_reembolso, name='solicitar_reembolso'),
+    path('refund/myrefund/', views.my_refund, name='my_refund'),
 ]

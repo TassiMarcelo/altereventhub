@@ -140,6 +140,7 @@ def venue_form(request, id=None):
     user = request.user
 
     if not user.is_organizer:
+        messages.error(request, f'No posee los roles necesarios para acceder.')
         return redirect("venue")
     
     if request.method == "POST":
@@ -178,12 +179,34 @@ def venue_baja(request,id=None):
 
     user = request.user
     if not user.is_organizer:
+        messages.error(request, f'No se puede dar de baja la ubicacion ya que no posee los roles necesarios.')
         return redirect("venue")
+    
+    venue = {}
     
     if request.method == "POST":
         venue = get_object_or_404(Venue, pk=id)
-        venue.venue_baja()
-        messages.success(request, f'Se eliminó correctamente la ubicación "{venue.name}".')
-        return redirect("venue")
+        if venue.bl_baja:
+            messages.error(request, f'No se puede  de baja la ubicacion ya que se encuentra dada de baja o no existe.')
+        else:
+            venue.venue_baja()
+            messages.success(request, f'Se eliminó correctamente la ubicación "{venue.name}".')
+            return redirect("venue")
+    else:
+        messages.error(request, f'No se puede dar de baja la ubicacion ya que se encuentra dada de baja o no existe.')
+    return redirect("venue")
 
+@login_required
+def venue_detail(request, id=None):
+    venue = {}
+    try:
+        venue = Venue.objects.get(pk=id)
+        if venue.bl_baja:
+            messages.error(request, f"No se puede acceder a la ubicación.")
+            return redirect("venue")
+        
+    except Venue.DoesNotExist:
+        messages.error(request, f"La ubicación solicitada no existe.")
+        return redirect("venue")
     
+    return render(request,"app/venue_detail.html", {"venue":venue,"user_is_organizer": request.user.is_organizer },)

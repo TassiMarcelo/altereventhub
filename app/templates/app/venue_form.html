@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1>Crear Ubicacion</h1>
+            <a href="{% url 'venue' %}"  class="btn btn-primary"><i class="bi bi-arrow-left"></i></a>
+
+            <div class="card">
+                <div class="card-body">
+                    <form action="{% url 'venue_form' %}" method="POST">
+                        {% csrf_token %}
+                        <div class="vstack gap-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="nombre" class="form-label">Nombre de la Ubicacion</label>
+                                    <input class="form-control" id="nombre" required="" type="text" value="" name="nombre" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="direccion" class="form-label">Direccion</label>
+                                    <input class="form-control" id="direccion" required="" type="text" value="" name="direccion" />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="ciudad" class="form-label">Ciudad</label>
+                                    <input class="form-control" id="ciudad" required="" type="text" value="" name="ciudad" />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="capacidad" class="form-label">Capacidad</label>
+                                    <input class="form-control" id="capacidad" required="" type="number" value="" name="capacidad" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="contacto" class="form-label">Contacto</label>
+                                    <input class="form-control" id="contacto" required="" type="text" value="" name="contacto" />
+                                </div>
+                            </div>
+
+                          
+                            <div class="col-md-6" align="start">
+                                <button type="submit" class="btn btn-primary">Crear Ubicacion</button>
+                            </div>
+                        
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

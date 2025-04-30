@@ -79,8 +79,50 @@ class Venue(models.Model):
     name=models.CharField(max_length=200)
     address= models.CharField(max_length=200)
     city= models.CharField(max_length=200)
-    capacity= models.IntegerField
+    capacity = models.IntegerField(default=0)
     contact=models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     bl_baja= models.BooleanField(default=False)
+
+    @classmethod
+    def validateVenues(cls, name,address,city,capacity,contact):
+        errors = {}
+
+        if name == "":
+            errors["nombre"] = "Por favor ingrese un titulo"
+
+        if address == "":
+            errors["direccion"] = "Por favor ingrese una descripcion"
+        
+        if city == "":
+            errors["ciudad"] = "Por favor ingrese una ciudad"
+            
+        if capacity == "":
+            errors["capacidad"] = "Por favor ingrese la capacidad"
+            
+        if contact == "":
+            errors["contacto"] = "Por favor ingrese un contacto"
+
+        return errors
+
+    @classmethod
+    def newVenue(cls, name,address,city,capacity,contact):
+        errors = Venue.validateVenues(name,address,city,capacity,contact)
+        if len(errors.keys()) > 0:
+            return False, errors
+        Venue.objects.create(
+            name=name,
+            address=address,
+            city=city,
+            capacity=capacity,
+            contact=contact,
+        )
+        return True, None
+    
+    def venue_baja(self):
+        self.bl_baja= True
+        self.save()
+
+        
+

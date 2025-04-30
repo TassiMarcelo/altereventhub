@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.contrib import messages
 
 from .models import Event, User, Venue
 
@@ -131,5 +132,41 @@ def event_form(request, id=None):
 
 @login_required
 def venue(request):
-    venues = Venue.objects.all()
-    return render(request, "app/venue.html", {"venue":venues, "user_is_organizer": request.user.is_organizer },)
+    venues = Venue.objects.filter(bl_baja=0)
+    return render(request, "app/venue.html", {"venues":venues, "user_is_organizer": request.user.is_organizer },)
+
+@login_required
+def venue_form(request, id=None):    
+    user = request.user
+
+    if not user.is_organizer:
+        return redirect("venue")
+    
+    if request.method == "POST":
+        nombre = request.POST.get("nombre")
+        direccion = request.POST.get("direccion")
+        ciudad = request.POST.get("ciudad")
+        capacidad = request.POST.get("capacidad")
+        contacto= request.POST.get("contacto")
+        if id is None:
+            Venue.newVenue(nombre, direccion, ciudad,capacidad,contacto)
+            messages.success(request, f'Se Creo correctamente la ubicación "{nombre}".')
+            return redirect("venue")
+   
+
+    return render(request,"app/venue_form.html")
+
+@login_required
+def venue_baja(request,id=None):
+
+    user = request.user
+    if not user.is_organizer:
+        return redirect("venue")
+    
+    if request.method == "POST":
+        venue = get_object_or_404(Venue, pk=id)
+        venue.venue_baja()
+        messages.success(request, f'Se eliminó correctamente la ubicación "{venue.name}".')
+        return redirect("venue")
+
+    

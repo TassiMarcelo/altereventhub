@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Venue{% endblock %}
+
+
+{% block content %}
+
+<div class="container">
+    {% if messages %}
+     {% for message in messages %}
+          
+                {% if message.tags == 'error' %}
+                    <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert" >
+                {% else %}
+                     <div class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
+                {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-geo-alt"></i> Ubicaciones</h1>
+        {% if user_is_organizer %}
+        <a href="{% url 'venue_form' %}"  class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
+            Crear Ubicacion<i class="bi bi-geo-alt"></i>
+        </a>
+        {% endif %}
+    </div>
+    
+    <table id="table" class="display" style="width:100%">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Direccion</th>
+                <th>Ciudad</th>
+                <th>Capacidad</th>
+                <th>Contacto</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        
+        <tbody>
+            {% for venue in venues %}
+                <tr>
+                    <td>{{venue.name}} </td>
+                    <td>{{venue.address}} </td>
+                    <td>{{venue.city}} </td>
+                    <td>{{venue.capacity}} </td>
+                    <td>{{venue.contact}} </td>
+                    <td>
+                        <div class="hstack gap-1">
+                            <a href="{% url 'venue_detail' venue.id %}" class="btn btn-sm btn-outline-primary rounded-3" aria-label="Ver detalle"title="Ver detalle"><i class="bi bi-eye" aria-hidden="true"></i></a>
+                            {% if user_is_organizer %}
+                                <a href="{% url 'venue_edit' venue.id %}" class="btn btn-sm btn-outline-secondary rounded-3" ><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                <button type="button" class="btn btn-sm btn-outline-danger delete-btn rounded-3 " data-id="{{ venue.id }}" data-name="{{ venue.name }}" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="bi bi-trash" aria-hidden="true"></i></button>
+                                
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<!--Modal Eliminar-->
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmar eliminación</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          ¿Estás seguro de que deseas eliminar la ubicacion <strong id="name"> </strong>?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <form id="deleteForm" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Eliminar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const deleteModal = document.getElementById('deleteModal');
+    
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const venueId = button.getAttribute('data-id');
+            const venueName = button.getAttribute('data-name');
+            const form = document.getElementById('deleteForm');
+            form.action = `/venue/${venueId}/delete/`;
+            document.getElementById('name').textContent = venueName;
+        });
+    });
+    </script>
+
+<!--Datatable-->
+<script>
+    $(document).ready(function () {
+        $('#table').DataTable({
+            "autoWidth": false,
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
+                "emptyTable": "No hay ubicaciones disponibles"
+            }
+        });
+    });
+</script>
+
+{% endblock %}

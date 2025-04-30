@@ -7,7 +7,7 @@ from django.contrib import messages
 from .models import Comment, Event
 from .forms import CommentForm
 
-from .models import Event, User, Ticket
+from .models import Event, User, Ticket, RefundRequest
 
 
 def register(request):
@@ -248,3 +248,31 @@ def view_comment(request, comment_id):
     return render(request, 'comments/view_comment.html', {'comment': comment})
 def solicitar_reembolso(request):
     return render(request, 'request_form.html')
+@login_required
+def solicitar_reembolso(request):
+    if request.method == "POST":
+        ticket_code = request.POST.get("ticket_code")
+        reason = request.POST.get("reason")     
+        details = request.POST.get("details")   
+       
+        if not ticket_code or not reason:
+            context = {
+                "errors": "Por favor completá los campos.",
+                "ticket_code": ticket_code,
+                "reason": reason,
+                "details": details,
+            }
+            return render(request, "request_form.html", context)
+
+        refund_request = RefundRequest.objects.create(
+            ticket_code=ticket_code,
+            reason=reason,
+            details=details,
+            requester=request.user
+        )
+        print(f"Se ha guardado un nuevo reembolso: {refund_request.ticket_code}, {refund_request.reason}, {refund_request.details}, {refund_request.requester}")
+
+        return redirect("events")
+
+
+    return render(request, "request_form.html")

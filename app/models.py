@@ -171,7 +171,8 @@ class RefundRequest(models.Model):
     approved = models.BooleanField(default=False)
     #convertir el ticket_code de ticket a string para compararlo con este str(ticket.ticket_code) == refund_request.ticket_code
     ticket_code = models.CharField(max_length=255)
-    reason = models.TextField()
+    reason = models.CharField(max_length=100)
+    details = models.TextField(blank=True, default="")
     approval_date = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refund_requests")
@@ -192,7 +193,7 @@ class RefundRequest(models.Model):
         return errors
 
     @classmethod
-    def new(cls, ticket_code, reason, requester):
+    def new(cls, ticket_code, reason, details, requester):
         errors = cls.validate(ticket_code, reason)
 
         if errors:
@@ -201,6 +202,7 @@ class RefundRequest(models.Model):
         cls.objects.create(
             ticket_code=ticket_code,
             reason=reason,
+            details=details,
             requester=requester,
         )
 

@@ -2,6 +2,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
 from django.utils import timezone
+from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
+
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)
@@ -218,4 +221,27 @@ class RefundRequest(models.Model):
             self.ticket_code = ticket_code
         if reason:
             self.reason = reason
+class Rating(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    title = models.CharField(max_length=100)
+    text = models.TextField(blank=True)
+    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    created_at = models.DateTimeField(auto_now_add=True)
+    bl_baja = models.BooleanField(default=False)
+    is_current = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+        models.UniqueConstraint(
+            fields=['user', 'event'],
+            condition=models.Q(is_current=True, bl_baja=False),
+            name='unique_active_rating_per_user_event'
+        )
+    ]
+    #Eliminacion logica
+    def soft_delete(self):
+        """Marcar como eliminado lógicamente"""
+        self.bl_baja = True
+        self.is_current = False
         self.save()

@@ -24,4 +24,7 @@ urlpatterns = [
     path('reembolso/solicitar/', views.solicitar_reembolso, name='solicitar_reembolso'),
     path('refund/request/', views.solicitar_reembolso, name='solicitar_reembolso'),
     path('refund/myrefund/', views.my_refund, name='my_refund'),
+    path('refund/edit/<int:id>/', views.editar_reembolso, name='editar_reembolso'),
+    path('refund/delete/<int:id>/', views.eliminar_reembolso, name='eliminar_reembolso'),
+
 ]

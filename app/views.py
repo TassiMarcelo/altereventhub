@@ -277,5 +277,33 @@ def solicitar_reembolso(request):
 
     return render(request, "request_form.html")
 
+@login_required
 def my_refund(request):
-    return render(request, 'my_refund.html')
+    reembolsos_usuario = RefundRequest.objects.filter(requester=request.user)
+    return render(request, "my_refund.html", {
+        "reembolsos": reembolsos_usuario
+    })
+
+@login_required
+def editar_reembolso(request, id):
+    reembolso = get_object_or_404(RefundRequest, id=id, requester=request.user)
+
+    if request.method == "POST":
+        reembolso.reason = request.POST.get("reason")
+        reembolso.details = request.POST.get("details")
+        reembolso.save()
+        messages.success(request, "Reembolso actualizado correctamente.")
+        return redirect("my_refund")
+
+    return render(request, "refund/edit_refund.html", {"reembolso": reembolso})
+
+@login_required
+def eliminar_reembolso(request, id):
+    reembolso = get_object_or_404(RefundRequest, id=id, requester=request.user)
+
+    if request.method == "POST":
+        reembolso.delete()
+        messages.success(request, "Reembolso eliminado correctamente.")
+        return redirect("my_refund")
+
+    return render(request, "refund/delete_refund.html", {"reembolso": reembolso})

@@ -3,8 +3,8 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-
-from .models import Event, User
+from django.core.exceptions import ValidationError
+from .models import Event, User,Category
 
 
 def register(request):
@@ -94,12 +94,16 @@ def event_form(request, id=None):
 
     if not user.is_organizer:
         return redirect("events")
+    
+    categories = Category.objects.filter(is_active=True)
+    selected_categories = []
 
     if request.method == "POST":
         title = request.POST.get("title")
         description = request.POST.get("description")
         date = request.POST.get("date")
         time = request.POST.get("time")
+        category_ids = request.POST.getlist("categories")
 
         [year, month, day] = date.split("-")
         [hour, minutes] = time.split(":")
@@ -108,20 +112,74 @@ def event_form(request, id=None):
             datetime.datetime(int(year), int(month), int(day), int(hour), int(minutes))
         )
 
+        selected_categories = Category.objects.filter(id__in=category_ids)
+
         if id is None:
-            Event.new(title, description, scheduled_at, request.user)
+            Event.new(title, description, scheduled_at, request.user, selected_categories)
         else:
             event = get_object_or_404(Event, pk=id)
-            event.update(title, description, scheduled_at, request.user)
+            event.update(title, description, scheduled_at, request.user, selected_categories)
 
         return redirect("events")
 
     event = {}
     if id is not None:
         event = get_object_or_404(Event, pk=id)
+        selected_categories = event.categories.values_list("id", flat=True)
 
     return render(
         request,
         "app/event_form.html",
-        {"event": event, "user_is_organizer": request.user.is_organizer},
+        {"event": event, "user_is_organizer": request.user.is_organizer, "categories": categories, "selected_categories": selected_categories},
     )
+
+@login_required
+def category_list(request):
+    categories = Category.objects.all().order_by("name")
+    return render(request, "app/category_list.html", {"categories": categories})
+                  
+@login_required
+def category_form(request, id=None):
+    
+    if not request.user.is_organizer:
+        return redirect("category_list")
+    
+    category =None
+    if id:
+        category = get_object_or_404(Category, pk=id)
+
+    if request.method =="POST":
+        name = request.POST.get("name", "").strip()
+        description = request.POST.get("description","")
+        is_active = request.POST.get("is_active") == "on"
+
+        if category:
+            category.name = name
+            category.description = description
+            category. is_active = is_active
+        else:
+            category = Category(name=name, description=description, is_active=is_active)
+        try:
+            category.clean()
+            category.save()
+            return redirect("category_list")
+        except ValidationError as e:
+            return render(
+                request,
+                "app/category_form.html",
+             {
+                 "category": category,
+                 "error": e.message_dict
+             },
+            )
+
+    return render( request, "app/category_form.html", {"category": category})
+
+@login_required
+def category_delete(request, id):
+    if not request.user.is_organizer:
+        return redirect("category_list")
+    
+    category = get_object_or_404(Category, pk=id)
+    category.delete()
+    return redirect("category_list")

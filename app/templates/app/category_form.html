@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h1>
+      {% if category %}Editar categoría{% else %}Nueva categoría{% endif %}
+    </h1>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="mb-3">
+        <label for="id_name" class="form-label">Nombre</label>
+        <input
+          type="text"
+          class="form-control"
+          id="id_name"
+          name="name"
+          value="{{ category.name|default_if_none:'' }}"
+          required
+        >
+      </div>
+
+      <div class="mb-3">
+        <label for="id_description" class="form-label">Descripción</label>
+        <textarea
+          class="form-control"
+          id="id_description"
+          name="description"
+          rows="3"
+        >{{ category.description|default_if_none:'' }}</textarea>
+      </div>
+
+      <div class="form-check mb-4">
+        <input
+          type="checkbox"
+          class="form-check-input"
+          id="id_is_active"
+          name="is_active"
+          {% if category and category.is_active %}checked{% endif %}
+        >
+        <label for="id_is_active" class="form-check-label">Activa</label>
+      </div>
+
+      {% if errors %}
+        <div class="alert alert-danger">
+          <ul class="mb-0">
+            {% for field, msgs in errors.items %}
+              <li><strong>{{ field }}:</strong> {{ msgs|join:", " }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <button type="submit" class="btn btn-primary">
+        {% if category %}Guardar cambios{% else %}Crear categoría{% endif %}
+      </button>
+      <a href="{% url 'category_list' %}" class="btn btn-secondary ms-2">Cancelar</a>
+    </form>
+  </div>
+{% endblock %}

@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.contrib import messages
 from .models import Comment, Event
 from .forms import CommentForm
+from django.db.models import Prefetch
 
 from .models import Event, User, Ticket, RefundRequest
 from .forms import RatingForm
@@ -70,13 +71,14 @@ def home(request):
 
 @login_required
 def events(request):
-    events = Event.objects.all().order_by("scheduled_at")
+    tickets = Prefetch('tickets', queryset=Ticket.objects.filter(bl_baja=False))
+    events = Event.objects.prefetch_related(tickets).order_by("scheduled_at")
+    
     return render(
         request,
         "app/events.html",
         {"events": events, "user_is_organizer": request.user.is_organizer},
     )
-
 
 from .forms import RatingForm
 
@@ -159,9 +161,17 @@ def tickets(request):
 
 @login_required
 def ticket_delete(request,ticket_code):
-    tickets = Ticket.objects.filter(user=request.user,ticket_code=ticket_code)
-    tickets[0].soft_delete()
-    return redirect("tickets")
+    ticket = Ticket.objects.filter(ticket_code=ticket_code).first()
+    if ticket:
+        if request.user.is_organizer: #TODO: Verificar que sea el creador del evento del ticket
+            ticket.soft_delete()
+            print("ticket eliminado con exito!")
+            return redirect("events")
+        elif request.user.name == ticket.user.username:
+            ticket.soft_delete()
+            print("ticket eliminado con exito!")
+            return redirect("tickets")
+    return redirect("events")
 
 
 @login_required

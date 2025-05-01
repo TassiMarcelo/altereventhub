@@ -1,48 +1,408 @@
+
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <div class="container">
-    <div class="row">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1>{{ event.title }}</h1>
-            <div>
-            {% if user_is_organizer %}
-                <a
-                    href="{% url 'event_edit' event.id %}"
-                    class="btn btn-outline-primary me-2"
-                >
-                    <i class="bi bi-pencil me-1"></i>Editar
-                </a>
-            {% endif %}
-        </div>
-    </div>
-    <div class="row">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Detalles del Evento</h5>
-                <p class="card-text">{{ event.description }}</p>
-                <div class="mt-4">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="bg-light rounded-circle p-2 me-3">
-                            <i class="bi bi-calendar-event text-primary"></i>
-                        </div>
-                        <div>
-                            <h6 class="mb-0">Fecha y Hora</h6>
-                            <p class="mb-0">{{ event.scheduled_at|date:"l, j \\d\\e F \\d\\e Y, H:i" }}</p>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="bg-light rounded-circle p-2 me-3">
-                            <i class="bi bi-person text-primary"></i>
-                        </div>
-                        <div>
-                            <h6 class="mb-0">Organizador</h6>
-                            <p class="mb-0">{{ event.organizer }}</p>
-                        </div>
-                    </div>
-                </div>
+  <!-- Mensajes -->
+  <div class="message-floating-container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show message-floating">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-        </div>
-    </div>
+        {% endfor %}
+    {% endif %}
 </div>
+  <!-- Encabezado del evento -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mb-0">{{ event.title }}</h1>
+        {% if user_is_organizer %}
+          <a href="{% url 'event_edit' event.id %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Editar Evento
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección principal de dos columnas -->
+  <div class="row">
+    <!-- Columna Detalles del evento -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h2 class="card-title text-primary mb-3 fs-4">Detalles del Evento</h2>
+          <p class="card-text lead fs-6">{{ event.description }}</p>
+          
+          <div class="event-details mt-4">
+            <div class="d-flex align-items-center mb-3">
+              <div class="bg-light rounded-circle p-2 me-3">
+                <i class="bi bi-calendar-event text-primary fs-4"></i>
+              </div>
+              <div>
+                <h6 class="mb-1 text-muted">Fecha y Hora</h6>
+                <p class="mb-0 fs-7">{{ event.scheduled_at|date:"l, j \\d\\e F \\d\\e Y, H:i" }}</p>
+              </div>
+            </div>
+            
+            <div class="d-flex align-items-center">
+              <div class="bg-light rounded-circle p-2 me-3">
+                <i class="bi bi-person text-primary fs-4"></i>
+              </div>
+              <div>
+                <h6 class="mb-1 text-muted">Organizador</h6>
+                <p class="mb-0 fs-7">{{ event.organizer.username }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compra tickets -->
+      <div class="d-grid mb-4">
+        <a href="{% url 'ticket_form' event.id %}" class="btn btn-success py-7">
+          Comprar tickets
+        </a>
+      </div>
+
+      <!-- Comentarios -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h2 class="card-title text-primary mb-4 fs-3">
+            Comentarios ({{ event.comments.count }})
+          </h2>
+          
+          {% for comment in event.comments.all %}
+            <div class="mb-2 pb-2 border-bottom">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <strong>{{ comment.user.username }}</strong><br>
+                  <small class="text-muted">{{ comment.created_at|date:"d M Y, H:i" }}</small>
+                </div>
+                {% if user == comment.user or user == event.organizer %}
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu">
+                    {% if user == comment.user %}
+                    <li><a class="dropdown-item" href="{% url 'edit_comment' comment.id %}">Editar</a></li>
+                    {% endif %}
+                    <li>
+                      <a class="dropdown-item text-danger" href="{% url 'delete_comment' comment.id %}" 
+                         onclick="return confirm('¿Estás seguro de que deseas eliminar este comentario?');">
+                        Eliminar
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+                {% endif %}
+              </div>
+              <h6 class="mt-2">{{ comment.title }}</h6>
+              <p class="mb-0">{{ comment.text }}</p>
+            </div>
+          {% empty %}
+            <p class="text-muted">No hay comentarios aún.</p>
+          {% endfor %}
+
+          <!-- Agregar comentarios -->
+          <form action="{% url 'add_comment' event.id %}" method="post" class="mt-4">
+            {% csrf_token %}
+            <h5 class="mb-3">Deja tu comentario</h5>
+            <div class="mb-3">
+              <label for="title" class="form-label">Título del comentario *</label>
+              <input type="text" class="form-control" id="title" name="title" 
+                     placeholder="Escribe un título para tu comentario..." required>
+            </div>
+            <div class="mb-3">
+              <label for="text" class="form-label">Contenido del comentario *</label>
+              <textarea class="form-control" id="text" name="text" rows="3" 
+                        placeholder="Escribe tu comentario aquí..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Publicar comentario</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna calificaciones -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm sticky-top" style="top: 20px;">
+        <div class="card-body">
+          <h2 class="card-title text-primary mb-4 fs-3">
+            <i class="bi bi-star-fill text-warning me-2"></i>
+            Calificaciones ({{ ratings.count }})
+          </h2>
+          
+          {% if ratings %}
+            {% for rating in ratings %}
+              <div class="mb-2 pb-2 border-bottom">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <strong>{{ rating.user.username }}</strong> <br>
+                    <small class="text-muted ">{{ rating.created_at|date:"d M Y, H:i" }}</small>
+                    <div class="text-warning mb-1">
+                      {% for i in "12345" %}
+                        {% if forloop.counter <= rating.rating %}★{% else %}☆{% endif %}
+                      {% endfor %}
+                    </div>
+                    
+                  </div>
+                  {% if user == rating.user or user == event.organizer %}
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-light rounded-circle" 
+                            type="button" 
+                            data-bs-toggle="dropdown" 
+                            aria-expanded="false"
+                            style="width: 32px; height: 32px;">
+                      <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      {% if user == rating.user %}
+                        <li>
+                          <a class="dropdown-item" href="{% url 'update_rating' event.id rating.id %}">
+                            <i class="bi bi-pencil me-2"></i>Editar
+                          </a>
+                        </li>
+                      {% endif %}
+                      <li>
+                        <a class="dropdown-item text-danger" 
+                           href="{% url 'delete_rating' event.id rating.id %}"
+                           onclick="return confirm('¿Eliminar esta calificación?')">
+                          <i class="bi bi-trash me-2"></i>Eliminar
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                  {% endif %}
+                </div>
+                <h6 class="mt-2">{{ rating.title }}</h6>
+                <p class="mb-0">{{ rating.text }}</p>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-center py-3">
+              <i class="bi bi-star text-muted fs-1"></i>
+              <p class="text-muted mt-2">Este evento aún no tiene calificaciones.</p>
+            </div>
+          {% endif %}
+
+          <!-- Formulario de Calificación -->
+          {% if user.is_authenticated and not user_rating %}
+            <hr>
+            <form method="post" action="{% url 'create_rating' event.id %}" id="ratingForm">
+              {% csrf_token %}
+              <input type="hidden" name="rating" id="ratingInput" value="3">
+              
+              <h5 class="mb-3">Califica este evento</h5>
+              <div class="mb-3">
+                <div class="rating-stars">
+                  {% for i in "12345" %}
+                    <label data-value="{{ forloop.counter }}" class="star-label">
+                      <span class="star-icon {% if forloop.counter <= 3 %}active{% endif %}">
+                        <i class="bi bi-star-fill fs-2"></i>
+                      </span>
+                    </label>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="id_title" class="form-label">Título *</label>
+                <input type="text" name="title" id="id_title" class="form-control" 
+                       placeholder="Ej: 'Experiencia increíble'" required maxlength="100">
+              </div>
+              
+              <div class="mb-3">
+                <label for="id_text" class="form-label">Comentario (opcional)</label>
+                <textarea name="text" id="id_text" class="form-control" rows="3"
+                          placeholder="Comparte tu experiencia..."></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-send me-2"></i>Publicar calificación
+              </button>
+            </form>
+          {% elif not user.is_authenticated %}
+            <div class="alert alert-info mt-3">
+              <i class="bi bi-info-circle me-2"></i>
+              <a href="{% url 'login' %}?next={% url 'event_detail' event.id %}" class="alert-link">
+                Inicia sesión
+              </a> para dejar tu calificación.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .alert-container { 
+  position: fixed; 
+  top: 20px; 
+  right: 20px; 
+  z-index: 1000; 
+  width: 300px; 
+}
+
+.rating-stars { 
+  display: flex; 
+  gap: 8px;
+  margin: 10px 0 15px;
+  justify-content: center;
+}
+
+.star-label { 
+  cursor: pointer; 
+  transition: transform 0.2s;
+  position: relative;
+}
+
+.star-label:hover {
+  transform: scale(1.2);
+}
+
+.star-icon { 
+  color: #e0e0e0; 
+  transition: color 0.2s;
+  display: block;
+}
+
+.star-icon.active { 
+  color: #f39c12; 
+}
+
+.star-label:hover .star-icon {
+  color: #f39c12;
+}
+.dropdown-menu {
+z-index: 1050 !important;
+}
+
+.sticky-top {
+z-index: 1020;
+}
+
+.alert-container { 
+  position: fixed; 
+  top: 20px; 
+  right: 20px; 
+  z-index: 1000; 
+  width: 300px; 
+}
+
+.rating-stars { 
+  display: flex; 
+  gap: 8px;
+  margin: 10px 0 15px;
+  justify-content: center;
+}
+
+.star-label { 
+  cursor: pointer; 
+  transition: transform 0.2s;
+  position: relative;
+}
+
+.star-label:hover {
+  transform: scale(1.2);
+}
+
+.star-icon { 
+  color: #e0e0e0; 
+  transition: color 0.2s;
+  display: block;
+}
+
+.star-icon.active { 
+  color: #f39c12; 
+}
+
+.star-label:hover .star-icon {
+  color: #f39c12;
+}
+.dropdown-menu {
+z-index: 1050 !important;
+}
+
+.sticky-top {
+z-index: 1020;
+}
+
+.message-floating-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 300px;
+    z-index: 1100;
+}
+
+.message-floating {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    opacity: 0.95;
+    transition: opacity 0.3s ease;
+}
+
+
+.ratings-column {
+    z-index: 1000;
+    top: 20px;
+}
+</style>
+
+<!-- Scripts -->
+<script>
+    // Manejo de las estrellas de calificación
+    document.addEventListener('DOMContentLoaded', function() {
+      const starLabels = document.querySelectorAll('.star-label');
+      const starIcons = document.querySelectorAll('.star-icon');
+      const ratingInput = document.getElementById('ratingInput');
+      
+      // Hover de las estrellas
+      starLabels.forEach((label, index) => {
+        // Efecto hover
+        label.addEventListener('mouseover', () => {
+          starIcons.forEach((icon, i) => {
+            if (i <= index) {
+              icon.style.color = '#f39c12';
+            } else {
+              icon.style.color = '#e0e0e0';
+            }
+          });
+        });
+        
+        //Reestablece el valor seleccionado
+        label.closest('.rating-stars').addEventListener('mouseleave', () => {
+          const currentValue = ratingInput.value ? parseInt(ratingInput.value) : 0;
+          starIcons.forEach((icon, i) => {
+            icon.style.color = i < currentValue ? '#f39c12' : '#e0e0e0';
+          });
+        });
+        
+        // Click para seleccionar valor
+        label.addEventListener('click', () => {
+          const value = index + 1;
+          ratingInput.value = value;
+          
+          // Actualiza visualmente las estrellas
+          starIcons.forEach((icon, i) => {
+            icon.classList.toggle('active', i < value);
+            icon.style.color = i < value ? '#f39c12' : '#e0e0e0';
+          });
+        });
+      });
+      
+      setTimeout(() => {
+        document.querySelectorAll('.alert').forEach(alert => {
+          alert.style.display = 'none';
+        });
+      }, 5000);
+    });
+  </script>
 {% endblock %}

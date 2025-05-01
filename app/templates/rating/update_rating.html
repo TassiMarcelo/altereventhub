@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h1 class="mb-3">Editando tu calificación para: {{ event.title }}</h1>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="rating" id="ratingInput" value="{{ current_rating }}">
+
+                <!-- Sistema de Estrellas -->
+                <div class="rating-stars mb-4">
+                    {% for i in "12345" %}
+                        <label data-value="{{ forloop.counter }}" class="star-label">
+                            <span class="star-icon {% if forloop.counter <= current_rating %}active{% endif %}">★</span>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_title" class="form-label fw-bold">Título*</label>
+                    <input type="text" name="title" id="id_title" class="form-control form-control-lg"
+                           value="{{ form.title.value|default:'' }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_text" class="form-label fw-bold">Comentario (opcional)</label>
+                    <textarea name="text" id="id_text" class="form-control" rows="3">{{ form.text.value|default:'' }}</textarea>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-save me-2"></i>Actualizar
+                    </button>
+                </div>
+                <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary mt-3">
+                    <i class="bi bi-x-circle me-2"></i>Cancelar
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Estilos -->
+<style>
+    .rating-stars {
+        display: flex;
+        gap: 10px;
+        margin: 10px 0 20px;
+    }
+    .star-label {
+        cursor: pointer;
+        font-size: 32px;
+        transition: transform 0.2s;
+    }
+    .star-label:hover {
+        transform: scale(1.1);
+    }
+    .star-icon {
+        color: #e0e0e0;
+        transition: color 0.2s;
+    }
+    .star-icon.active,
+    .star-label:hover .star-icon {
+        color: #f39c12;
+    }
+</style>
+
+<!-- Scripts -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentRating = parseInt(document.getElementById('ratingInput').value);
+        document.querySelectorAll('.star-label').forEach(star => {
+            star.addEventListener('click', function() {
+                const value = this.getAttribute('data-value');
+                document.getElementById('ratingInput').value = value;
+
+                document.querySelectorAll('.star-icon').forEach((icon, index) => {
+                    icon.classList.toggle('active', index < value);
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -21,6 +21,7 @@
                 <th>Tipo</th>
                 <th>Fecha de compra</th>
                 <th>Codigo</th>
+                <th>Accion</th>
             </tr>
         </thead>
         <tbody>
@@ -31,6 +32,26 @@
                     <td>{{ ticket.type }}</td>
                     <td>{{ ticket.buy_date|date:"d b Y, H:i" }}</td>
                     <td>{{ ticket.ticket_code }}</td>
+                    <td>
+                        <div class="hstack gap-1">
+                            <a href="{% url 'home' %}"
+                                class="btn btn-sm btn-outline-secondary"
+                                aria-label="Editar"
+                                title="Editar">
+                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                            </a>
+                            <form action="{% url 'ticket_delete' ticket.ticket_code %}" method="POST">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-outline-danger"
+                                    title="Eliminar"
+                                    type="submit"
+                                    aria-label="Eliminar"
+                                    titile="Eliminar">
+                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
                 </tr>
             {% empty %}
                 <tr>

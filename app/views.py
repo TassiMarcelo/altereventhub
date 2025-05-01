@@ -153,8 +153,15 @@ def event_form(request, id=None):
 
 @login_required
 def tickets(request):
-    tickets = Ticket.objects.filter(user=request.user).order_by("buy_date")
+    tickets = Ticket.objects.filter(user=request.user, bl_baja=0).order_by("buy_date")
     return render(request, "app/tickets.html",{"tickets":tickets})
+
+
+@login_required
+def ticket_delete(request,ticket_code):
+    tickets = Ticket.objects.filter(user=request.user,ticket_code=ticket_code)
+    tickets[0].soft_delete()
+    return redirect("tickets")
 
 
 @login_required

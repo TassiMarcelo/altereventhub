@@ -130,14 +130,14 @@ class Ticket(models.Model):
         self.type = type or self.type
         self.event = event or self.event
         self.user = user or self.user
-
         self.save()
 
     def soft_delete(self): # Baja lógica
         self.bl_baja = True
         self.save()
-#models para comment
 
+
+#models para comment
 class Comment(models.Model):
     title = models.CharField(max_length=100, verbose_name="Título")
     text = models.TextField(verbose_name="Texto del comentario")

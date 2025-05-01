@@ -26,6 +26,19 @@
                                     value="{{ event.title }}"
                                     name="title" />
                             </div>
+
+                            <div class="form-group">
+                                <label for="venueSelect">Ubicacion</label>
+                                <select name="venueSelect" class="form-control" required>
+                                    <option value="">Seleccione una Ubicación</option>
+                                    {% for venue in venues %}
+                                      <option value="{{ venue.id }}" {% if event.venue.id == venue.id %}selected{% endif %}>
+                                        {{ venue.name }} - {{ venue.city }}
+                                      </option>
+                                    {% endfor %}
+                                  </select>
+                              </div>
+
                             <div>
                                 <label for="description" class="form-label">Descripción</label>
                                 <textarea

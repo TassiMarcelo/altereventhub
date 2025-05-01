@@ -22,7 +22,7 @@
                 <th>Título</th>
                 <th>Descripción</th>
                 <th>Fecha</th>
-                <th>Categoria</th>
+                <th>Categorias</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -32,7 +32,16 @@
                     <td>{{ event.title }}</td>
                     <td>{{ event.description }}</td>
                     <td>{{ event.scheduled_at|date:"d b Y, H:i" }}</td>
-                    <td>{{ event.category.name }}</td>
+                    <td>{% if event.categories.all %}
+                            {% for category in event.categories.all %}
+                                <div class= "category-item">
+                                <span class="badge text-dark">{{ category.name }}</span>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                                <span class="text-muted">Sin Categorías</span>
+                             {% endif %}        
+                    </td>
                     <td>
                         <div class="hstack gap-1">
                             <a href="{% url 'event_detail' event.id %}"

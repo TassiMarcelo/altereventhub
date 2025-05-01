@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from .models import Event, User,Category
+from django.db.models import Count
 
 
 def register(request):
@@ -135,7 +136,7 @@ def event_form(request, id=None):
 
 @login_required
 def category_list(request):
-    categories = Category.objects.all().order_by("name")
+    categories = Category.objects.annotate(event_count=Count("events"))
     return render(request, "app/category_list.html", {"categories": categories})
                   
 @login_required
@@ -183,3 +184,8 @@ def category_delete(request, id):
     category = get_object_or_404(Category, pk=id)
     category.delete()
     return redirect("category_list")
+
+def category_events(request, id):
+    category = get_object_or_404(Category, id=id)
+    events= category.events.all()
+    return render(request, "app/category_events-html",{"category": category, "events":events})

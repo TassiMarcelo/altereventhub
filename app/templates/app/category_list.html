@@ -11,6 +11,7 @@
           <th>Nombre</th>
           <th>Descripción</th>
           <th>Activo</th>
+          <th>Eventos</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -26,18 +27,25 @@
                 <span class="badge bg-secondary">No</span>
               {% endif %}
             </td>
+
+            <td class="text-center">{{ category.event_count }}</td>  
             <td>
               <a href="{% url 'category_edit' category.id %}" class="btn btn-sm btn-outline-secondary">
-                ✏️
+                <i class="bi bi-pencil"></i>
               </a>
               <form method="post"
                     action="{% url 'category_delete' category.id %}"
                     style="display:inline;">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-sm btn-outline-danger">
-                  🗑️
+                  <i class="bi bi-trash"></i>
                 </button>
               </form>
+              {% if request.user.is_staff %}
+                <a href="{% url 'category_events' category.id %}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye"></i>
+                </a>
+              {% endif %}
             </td>
           </tr>
         {% empty %}

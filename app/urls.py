@@ -13,6 +13,8 @@ urlpatterns = [
     path("events/<int:id>/edit/", views.event_form, name="event_edit"),
     path("events/<int:id>/", views.event_detail, name="event_detail"),
     path("events/<int:id>/delete/", views.event_delete, name="event_delete"),
+
+    path("tickets", views.tickets, name="tickets"), # Ver tickets comprados siendo un cliente
     path("ticket/<int:id>/form/", views.ticket_form, name="ticket_form"), # El formulario de tarjeta de credito
     path("ticket/<int:eventId>/buy/", views.ticket_buy, name="ticket_buy"), # El POST para comprar tickets
     

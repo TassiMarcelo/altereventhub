@@ -2,6 +2,14 @@
 {% load static %}
 {% block content %}
 
+{% if messages %}
+<script>
+    {% for message in messages %}
+        alert("{{ message|escapejs }}");
+    {% endfor %}
+</script>
+{% endif %}
+
 <div class="container mt-5">
     <div class="card shadow-lg">
         <div class="card-header text-center">
@@ -59,5 +67,6 @@
         </div>
     </div>
 </div>
+
 
 {% endblock %}

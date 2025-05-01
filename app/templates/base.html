@@ -56,6 +56,13 @@
                                 </a>
                             </li>
                             {% endif %}
+                            {% if user.is_authenticated and not user.is_organizer %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'tickets' %}">
+                                    <i class="bi bi-ticket-perforated"></i> Mis tickets
+                                </a>
+                            </li>
+                            {% endif %}
                         </ul>
                     </div>
 

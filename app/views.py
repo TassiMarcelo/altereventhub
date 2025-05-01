@@ -150,9 +150,14 @@ def event_form(request, id=None):
 
 
 @login_required
+def tickets(request):
+    tickets = Ticket.objects.filter(user=request.user).order_by("buy_date")
+    return render(request, "app/tickets.html",{"tickets":tickets})
+
+
+@login_required
 def ticket_buy(request, eventId):
     user = request.user
-
     if request.method == "POST":
         quantity = request.POST.get("quantity")
         type = request.POST.get("type")
@@ -185,8 +190,11 @@ def ticket_buy(request, eventId):
         )
 
         print(f"Ticket comprado! Codigo: {str(ticket.ticket_code)}")
-
-    return redirect("events")
+        # Agregar un mensaje con el ticket_code
+        messages.success(request, f"¡Compra exitosa! Código del ticket: {ticket.ticket_code}")
+    
+    return redirect('ticket_form', id=eventId)  # redirigimos al mismo formulario
+        
 
 def ticket_form(request, id):
     # Cuando intento acceder al ticket form (formulario de tarjeta de credito para comprar tickets), necesito saber si el evento existe

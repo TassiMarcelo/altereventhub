@@ -31,4 +31,11 @@ urlpatterns = [
     path('event/<int:event_id>/rating/<int:rating_id>/delete/', views.delete_rating, name='delete_rating'),
     path('event/<int:event_id>/ratings/', views.list_ratings, name='list_ratings'),
 
+
+## Venue
+    path("venue/", views.venue, name="venue"),
+    path("venue/create/", views.venue_form, name="venue_form"),
+    path("venue/<int:id>/delete/", views.venue_baja, name="venue_delete"),
+    path("venue/<int:id>/edit/", views.venue_form, name="venue_edit"),
+    path("venue/<int:id>/", views.venue_detail, name="venue_detail"),
 ]

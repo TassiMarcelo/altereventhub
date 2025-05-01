@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1 class="mb-4">
+                {% if venue.id %}
+                    Editar Ubicacion
+                {% else %}
+                    Crear Ubicacion
+                {% endif %}
+            </h1>
+            
+            <a href="{% url 'venue' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left"></i></a>
+
+            <div class="card">
+                <div class="card-body">
+                    <form action="{% if venue.id %} {% url 'venue_edit' venue.id %} {% else %} {% url 'venue_form' %} {% endif %}" method="POST">
+                        {% csrf_token %}
+                        <div class="vstack gap-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="nombre" class="form-label">Nombre de la Ubicacion</label>
+                                    <input class="form-control" id="nombre" required="" type="text" value="{{venue.name}}" name="nombre" placeholder="Ej. Estadio Nacional"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="direccion" class="form-label">Direccion</label>
+                                    <input class="form-control" id="direccion" required="" type="text" value="{{venue.address}}" name="direccion" placeholder="Ej. Av Grecia 2001" />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="ciudad" class="form-label">Ciudad</label>
+                                    <input class="form-control" id="ciudad" required="" type="text" value="{{venue.city}}" name="ciudad" placeholder="Ej. Chile" />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="capacidad" class="form-label">Capacidad</label>
+                                    <input class="form-control" id="capacidad" required="" type="number" value="{{venue.capacity}}" name="capacidad" placeholder="Ej. 500" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="contacto" class="form-label">Contacto</label>
+                                    <textarea rows="4" cols="50" style="resize: both;" class="form-control" id="contacto" required name="contacto" placeholder="Detalle la información del contacto">{{ venue.contact }}</textarea>
+                                   
+                                </div>
+                            </div>
+
+                          
+                            <div class="col-md-6" align="start">
+                                <button type="submit" class="btn btn-primary">
+                                    {% if venue.id %}
+                                        Editar Ubicacion
+                                    {% else %}
+                                        Crear Ubicacion
+                                    {% endif %}
+                                </button>
+                            </div>
+                        
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -10,6 +10,8 @@
 </script>
 {% endif %}
 
+
+
 <div class="container mt-5">
     <div class="card shadow-lg">
         <div class="card-header text-center">
@@ -44,19 +46,27 @@
 
                 <div class="mb-3">
                     <label for="card_number" class="form-label">Número de Tarjeta</label>
-                    <input type="text" class="form-control" id="card_number" name="card_number" maxlength="16" pattern="\d{16}" placeholder="1234 5678 9012 3456" required>
+                    <input type="text" class="form-control" id="card_number" name="card_number" maxlength="19" pattern="\d{16}" placeholder="1234 5678 9012 3456" required>
                 </div>
 
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="card_expiry" class="form-label">Fecha de Expiración (MM/AA)</label>
-                        <input type="text" class="form-control" id="card_expiry" name="card_expiry" pattern="\d{2}/\d{2}" placeholder="MM/AA" required>
+                        <input type="text" class="form-control" id="card_expiry" name="card_expiry" pattern="\d{2}/\d{2}" maxlength="5" placeholder="MM/AA" required>
                     </div>
 
                     <div class="col-md-6 mb-3">
                         <label for="card_cvv" class="form-label">CVV</label>
-                        <input type="text" class="form-control" id="card_cvv" name="card_cvv" maxlength="4" pattern="\d{3,4}" placeholder="123" required>
+                        <input type="text" class="form-control" id="card_cvv" name="card_cvv" maxlength="4" pattern="\d{3,4}" placeholder="1234" required>
                     </div>
+                </div>
+
+                <!-- ...dentro del <form> antes del botón de Comprar -->
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" value="" id="terms" required>
+                    <label class="form-check-label" for="refundPolicy">
+                        Entiendo y acepto los <a href="#" data-bs-toggle="modal" data-bs-target="#refundPolicyModal" style="color: #0d6efd;">Términos y Condiciones</a>.
+                    </label>
                 </div>
 
                 <div class="d-grid">
@@ -67,6 +77,33 @@
         </div>
     </div>
 </div>
-
-
+<div class="modal fade" id="refundPolicyModal" tabindex="-1" aria-labelledby="refundPolicyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="refundPolicyModalLabel">Términos y Condiciones</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <ul>
+                <li>Las entradas no son reembolsables 30 dias luego de realizada la compra.</li>
+                <li>Debe presentar una identificación válida junto con la entrada para ingresar al evento.</li>
+                <li>El organizador se reserva el derecho de admisión.</li>
+                <li>En caso de cancelación del evento, se informará el procedimiento de reembolso.</li>
+                <li>La compra implica la aceptación de estas condiciones.</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+</div>
+<script>
+    document.getElementById('card_number').addEventListener('input', function (e) {
+        let value = e.target.value.replace(/\D/g, '').substring(0, 16); // Solo dígitos, máx 16
+        let formatted = value.match(/.{1,4}/g)?.join(' ') || '';
+        e.target.value = formatted;
+    });
+</script>
 {% endblock %}

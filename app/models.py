@@ -85,7 +85,7 @@ class Event(models.Model):
 
 [pendiente] Un usuario REGULAR puede comprar, editar y eliminar sus tickets. 
 
-[pendiente] Hacer formulario para datos de tarjeta
+[ok] Hacer formulario para datos de tarjeta
 
 [pendiente] Un usuario organizador puede eliminar tickets de sus eventos. (si el usuario es de tipo organizador, puede eliminar tickets)
 
@@ -113,8 +113,6 @@ class Ticket(models.Model):
     
     @classmethod
     def new(cls, buy_date, quantity, type, event, user): # Alta
-
-        # TODO: Validaciones
 
         # Asociar al comprador (User) y al evento (Event)
         ticket = cls.objects.create(

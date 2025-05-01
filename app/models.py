@@ -31,11 +31,70 @@ class User(AbstractUser):
         return errors
 
 
+class Venue(models.Model):
+    name=models.CharField(max_length=200)
+    address= models.CharField(max_length=200)
+    city= models.CharField(max_length=200)
+    capacity = models.IntegerField(default=0)
+    contact=models.CharField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    bl_baja= models.BooleanField(default=False)
+
+    @classmethod
+    def validateVenues(cls, name,address,city,capacity,contact):
+        errors = {}
+
+        if name == "":
+            errors["nombre"] = "Por favor ingrese un titulo"
+
+        if address == "":
+            errors["direccion"] = "Por favor ingrese una descripcion"
+        
+        if city == "":
+            errors["ciudad"] = "Por favor ingrese una ciudad"
+            
+        if capacity == "":
+            errors["capacidad"] = "Por favor ingrese la capacidad"
+            
+        if contact == "":
+            errors["contacto"] = "Por favor ingrese un contacto"
+        return errors
+    
+    @classmethod
+    def newVenue(cls, name,address,city,capacity,contact):
+        errors = Venue.validateVenues(name,address,city,capacity,contact)
+        if len(errors.keys()) > 0:
+            return False, errors
+        Venue.objects.create(
+            name=name,
+            address=address,
+            city=city,
+            capacity=capacity,
+            contact=contact,
+        )
+        return True, None
+    
+    def venue_baja(self):
+        self.bl_baja= True
+        self.save()
+
+    def editarVenue(self,name,address,city,capacity,contact):
+        self.name= name or self.name
+        self.address=address or self.address
+        self.city=city or self.city
+        self.capacity= capacity or self.capacity
+        self.contact=contact or self.contact
+        self.save()
+
+
+
 class Event(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     scheduled_at = models.DateTimeField()
     organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_events")
+    venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name="events")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -43,7 +102,7 @@ class Event(models.Model):
         return self.title
 
     @classmethod
-    def validate(cls, title, description, scheduled_at):
+    def validate(cls, title, description,venue, scheduled_at):
         errors = {}
 
         if title == "":
@@ -52,30 +111,34 @@ class Event(models.Model):
         if description == "":
             errors["description"] = "Por favor ingrese una descripcion"
 
+        if venue is None:
+            errors["venueSelect"] = "Por favor ingrese una ubicacion"
+        
         return errors
 
     @classmethod
-    def new(cls, title, description, scheduled_at, organizer):
-        errors = Event.validate(title, description, scheduled_at)
+    def new(cls, title, description,venue, scheduled_at, organizer):
+        errors = Event.validate(title, description,venue,scheduled_at)
 
         if len(errors.keys()) > 0:
             return False, errors
-
+        
         Event.objects.create(
             title=title,
             description=description,
+            venue=venue,
             scheduled_at=scheduled_at,
             organizer=organizer,
         )
 
         return True, None
 
-    def update(self, title, description, scheduled_at, organizer):
+    def update(self, title, description,venue, scheduled_at, organizer):
         self.title = title or self.title
         self.description = description or self.description
         self.scheduled_at = scheduled_at or self.scheduled_at
         self.organizer = organizer or self.organizer
-
+        self.venue = venue or self.venue
         self.save()
 
 
@@ -244,60 +307,3 @@ class Rating(models.Model):
         self.bl_baja = True
         self.is_current = False
         self.save()
-
-class Venue(models.Model):
-    name=models.CharField(max_length=200)
-    address= models.CharField(max_length=200)
-    city= models.CharField(max_length=200)
-    capacity = models.IntegerField(default=0)
-    contact=models.CharField(max_length=200)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    bl_baja= models.BooleanField(default=False)
-
-    @classmethod
-    def validateVenues(cls, name,address,city,capacity,contact):
-        errors = {}
-
-        if name == "":
-            errors["nombre"] = "Por favor ingrese un titulo"
-
-        if address == "":
-            errors["direccion"] = "Por favor ingrese una descripcion"
-        
-        if city == "":
-            errors["ciudad"] = "Por favor ingrese una ciudad"
-            
-        if capacity == "":
-            errors["capacidad"] = "Por favor ingrese la capacidad"
-            
-        if contact == "":
-            errors["contacto"] = "Por favor ingrese un contacto"
-        return errors
-    
-    @classmethod
-    def newVenue(cls, name,address,city,capacity,contact):
-        errors = Venue.validateVenues(name,address,city,capacity,contact)
-        if len(errors.keys()) > 0:
-            return False, errors
-        Venue.objects.create(
-            name=name,
-            address=address,
-            city=city,
-            capacity=capacity,
-            contact=contact,
-        )
-        return True, None
-    
-    def venue_baja(self):
-        self.bl_baja= True
-        self.save()
-
-    def editarVenue(self,name,address,city,capacity,contact):
-        self.name= name or self.name
-        self.address=address or self.address
-        self.city=city or self.city
-        self.capacity= capacity or self.capacity
-        self.contact=contact or self.contact
-        self.save()
-        

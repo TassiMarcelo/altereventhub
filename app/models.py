@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
-from django.core.exceptions import ValidationError
 from django.db import models
+
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)
@@ -26,27 +26,6 @@ class User(AbstractUser):
 
         return errors
 
-class Category(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True, null=True)
-    is_active = models.BooleanField(default=True)
-    events = models.ManyToManyField("Event", related_name="category_events", blank=True)
-    
-
-    def clean(self):
-        if not self.name.strip():
-            raise ValidationError("El nombre de la categoria no puede estar vacio")
-
-        existing = Category.objects.filter(name=self.name, is_active=True)
-        if self.pk:
-            existing = existing.exclude(pk=self.pk) 
-
-        if self.is_active and existing.exists():
-            raise ValidationError("El nombre de la categoria ya existe")
-
-    def __str__(self):
-        return self.name    
-
 
 class Event(models.Model):
     title = models.CharField(max_length=200)
@@ -55,13 +34,12 @@ class Event(models.Model):
     organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_events")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    categories = models.ManyToManyField(Category, related_name="events_categories", blank=True)
 
     def __str__(self):
         return self.title
 
     @classmethod
-    def validate(cls, title, description, scheduled_at, categories=None):
+    def validate(cls, title, description, scheduled_at):
         errors = {}
 
         if title == "":
@@ -70,36 +48,28 @@ class Event(models.Model):
         if description == "":
             errors["description"] = "Por favor ingrese una descripcion"
 
-        if categories is None or len(categories) == 0:
-            errors["categories"] = "Por favor ingrese al menos una categoria"
-
         return errors
 
     @classmethod
-    def new(cls, title, description, scheduled_at, organizer, categories=None):
-        errors = cls.validate(title, description, scheduled_at, categories)
+    def new(cls, title, description, scheduled_at, organizer):
+        errors = Event.validate(title, description, scheduled_at)
 
-        if errors:
+        if len(errors.keys()) > 0:
             return False, errors
 
-        event = cls.objects.create(
+        Event.objects.create(
             title=title,
             description=description,
             scheduled_at=scheduled_at,
             organizer=organizer,
         )
-        if categories:
-            event.categories.set(categories)
+
         return True, None
 
-    def update(self, title, description, scheduled_at, organizer, categories=None):
+    def update(self, title, description, scheduled_at, organizer):
         self.title = title or self.title
         self.description = description or self.description
         self.scheduled_at = scheduled_at or self.scheduled_at
         self.organizer = organizer or self.organizer
 
         self.save()
-
-        if categories is not None:
-            self.categories.set(categories)
-        return True

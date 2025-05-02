@@ -43,9 +43,12 @@
         <i class="bi bi-pencil"></i>
         </button>
 
-                        <a href="{% url 'eliminar_reembolso' reembolso.id %}" class="btn btn-outline-danger btn-sm" title="Eliminar">
-                            <i class="bi bi-trash"></i>
-                        </a>
+        <a href="#" class="btn btn-outline-danger btn-sm" title="Eliminar"
+        data-bs-toggle="modal" data-bs-target="#deleteModal"
+        data-id="{{ reembolso.id }}" data-name="{{ reembolso.ticket_code }}">
+         <i class="bi bi-trash"></i>
+     </a>
+     
                     </div>
                 </li>
                 {% empty %}
@@ -148,6 +151,43 @@
         });
     });
 </script>
-    
+<!-- Modal Eliminar -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que deseas eliminar el reembolso del ticket <strong id="name"></strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const deleteModal = document.getElementById('deleteModal');
+        
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const refundId = button.getAttribute('data-id'); 
+            const refundName = button.getAttribute('data-name'); 
+            
+            document.getElementById('name').textContent = refundName;
+
+            const form = document.getElementById('deleteForm');
+            form.action = `/refund/delete/${refundId}/`; 
+        });
+    });
+</script>
+   
   
   {% endblock %}

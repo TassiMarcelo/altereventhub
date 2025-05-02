@@ -348,7 +348,8 @@ def eliminar_reembolso(request, id):
         messages.success(request, "Reembolso eliminado correctamente.")
         return redirect("my_refund")
 
-    return render(request, "refund/delete_refund.html", {"reembolso": reembolso})
+    return HttpResponseForbidden("Método no permitido.") 
+    
 from django.db import IntegrityError
 from django.db.transaction import atomic
 

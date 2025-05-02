@@ -97,6 +97,7 @@ class Event(models.Model):
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name="events")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
 
     def __str__(self):
         return self.title
@@ -115,6 +116,11 @@ class Event(models.Model):
             errors["venueSelect"] = "Por favor ingrese una ubicacion"
         
         return errors
+
+
+    @property
+    def active_tickets(self):
+        return self.tickets.filter(bl_baja=False)
 
     @classmethod
     def new(cls, title, description,venue, scheduled_at, organizer):
@@ -146,14 +152,15 @@ class Event(models.Model):
 '''
 [ok] ticket_code es un valor autogenerado en el backend
 
-[pendiente] Un usuario REGULAR puede comprar, editar y eliminar sus tickets. 
+[ok] Un usuario REGULAR puede comprar, y eliminar sus tickets. 
 
 [ok] Hacer formulario para datos de tarjeta
 
-[pendiente] Un usuario organizador puede eliminar tickets de sus eventos. (si el usuario es de tipo organizador, puede eliminar tickets)
+[ok] Un usuario organizador puede eliminar tickets de sus eventos. (si el usuario es de tipo organizador, puede eliminar tickets)
 
-[pendiente] Más adelante se agregaron controles de tiempo. Por ejemplo, podrá editar y eliminar dentro de los 30
-minutos de que la entrada fue comprada (ESTO NO ES OBLIGATORIO)
+[pendiente] Un usuario REGULAR editar sus tickets. 
+
+[pendiente] Más adelante se agregaron controles de tiempo. Por ejemplo, podrá editar y eliminar dentro de los 30 minutos de que la entrada fue comprada (ESTO NO ES OBLIGATORIO)
 '''
 class Ticket(models.Model):
     quantity = models.IntegerField()

@@ -1,0 +1,311 @@
+[33mcommit 7d829c466fe81f77c3d0919f0e59394a7f4c3452[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmallqui-joe[m[33m)[m
+Author: MallquiJoe <j18941298@gmail.com>
+Date:   Thu May 1 19:26:07 2025 -0300
+
+    Funciones de crear, editar y eliminar creadas
+
+[33mcommit 677eba845e5c8fbc15f1752e2b77664ea536f5c2[m[33m ([m[1;31morigin/mallqui-joe[m[33m)[m
+Author: MallquiJoe <j18941298@gmail.com>
+Date:   Thu May 1 13:42:10 2025 -0300
+
+    Añadi las vistas y templates para manejar categorias y nuevos migrations
+
+[33mcommit 641ea84cdd7f3c97e5df6cf86bd93ef9e22d5593[m
+Author: MallquiJoe <j18941298@gmail.com>
+Date:   Mon Apr 28 00:24:10 2025 -0300
+
+    Agrege la clase Category y cambios en HTML para mostrar la categoria
+
+[33mcommit 3c1c883d8c2be14402a03dda300a0968c2a5334e[m[33m ([m[1;32mmain[m[33m)[m
+Author: MallquiJoe <j18941298@gmail.com>
+Date:   Tue Apr 22 16:30:39 2025 -0300
+
+    Agregue mi nombre
+
+[33mcommit 379ec8f6633f6e2b07a446f65d023aac23d4ceb5[m
+Author: cari395 <carinimatu11@live.com.ar>
+Date:   Tue Apr 22 16:11:34 2025 -0300
+
+    Agrego mi nombre
+
+[33mcommit d52667f88ae8363286e9456e9ca40859b3d5711c[m
+Author: DRVR1 <ianvidmar200@gmail.com>
+Date:   Tue Apr 22 16:06:37 2025 -0300
+
+    nombres
+
+[33mcommit 5f92ff31ce944be1ca1f2e0b38ca44b720fd7a86[m
+Merge: 2bfd89e d938e63
+Author: Tassi <tassi.tbj@gmail.com>
+Date:   Tue Apr 22 15:58:41 2025 -0300
+
+    agrego mi nombre
+
+[33mcommit 2bfd89e94be52f064d536fb62f5c224fbcc9f020[m
+Author: Tassi <tassi.tbj@gmail.com>
+Date:   Tue Apr 22 15:52:23 2025 -0300
+
+    conflictos ?
+
+[33mcommit d938e631223de14cd2bf7ce46fd7472613b093bf[m
+Author: cambaccarini <cambaccarini01@gmail.com>
+Date:   Tue Apr 22 15:49:04 2025 -0300
+
+    agrego mi nombre
+
+[33mcommit 4eb11ed84315b5400b0452c70296456547acfb7d[m
+Author: DRVR1 <ianvidmar200@gmail.com>
+Date:   Tue Apr 22 15:46:59 2025 -0300
+
+    Añadir nombre
+
+[33mcommit 1f66b3119dd583693f4546edf958a3ce589f4c89[m
+Author: Ramiro <cendoyaramiro36@gmail.com>
+Date:   Tue Apr 22 15:43:15 2025 -0300
+
+    Se agrego el nombre al README
+
+[33mcommit 292cb3029a4d4b72a7c76bbca02799bf2861197d[m
+Author: Tassi <tassi.tbj@gmail.com>
+Date:   Tue Apr 22 15:33:47 2025 -0300
+
+    A poner los nombres
+
+[33mcommit a860d505aea37fed9987c13f731f44682b6541ea[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sun Apr 20 20:06:42 2025 -0300
+
+    fix. Cambia prop data por la nueva scheduled_at
+
+[33mcommit eaadf632cc97e562bfac71a5e11b719b1cc77a90[m
+Merge: c1cb6dd 7468dbf
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Sun Apr 20 11:56:48 2025 -0300
+
+    Merge pull request #5 from frlp-utn-ingsoft/feature/events_curd
+    
+    Agrega CRUD de events
+
+[33mcommit 7468dbffa09ade956a9622f2a0ae5acb535ebaa6[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sun Apr 20 04:33:25 2025 -0300
+
+    refactor de los test. Hace clases mas cohesivas
+
+[33mcommit f828540cbcfe54d1e17f5ef28315e281dc0c4e48[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sun Apr 20 04:32:39 2025 -0300
+
+    fix del editar evento
+
+[33mcommit 736a1ffcc4e0ccfcfec00a8b479010946c4e44c3[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sun Apr 20 03:38:43 2025 -0300
+
+    Agrega CRUD para evento con sus tests
+
+[33mcommit c1cb6dd4faac7c12795ed526bdb769ba5410e1ac[m
+Merge: 18783f4 4d51221
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Sat Apr 19 17:36:39 2025 -0300
+
+    Merge pull request #4 from frlp-utn-ingsoft/feature/home
+    
+    Feature/home
+
+[33mcommit 4d51221e42435cf55b6bfc7b42dd826810e961cb[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sat Apr 19 17:22:51 2025 -0300
+
+    fix al navegar a iniciar sesion. Mostraba inicialmente el mensaje de error
+
+[33mcommit 9eb2801b8ad343117c4ab6679baf6e6e2b7e448a[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sat Apr 19 17:16:28 2025 -0300
+
+    Elimina codigo comentado
+
+[33mcommit d340dc3df0c43b713176026106108628c5963ea5[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sat Apr 19 17:15:12 2025 -0300
+
+    Agrega test e2e para la home
+
+[33mcommit 511062e7c51f73ec202d7c45af5f15913d998cc3[m
+Merge: 760019c 18783f4
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sat Apr 19 16:53:27 2025 -0300
+
+    Merge remote-tracking branch 'origin/main' into feature/home
+
+[33mcommit 760019c950c1c06271756fe93bcc92774754bc54[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sat Apr 19 16:52:08 2025 -0300
+
+    Agrega vista para la home
+
+[33mcommit 18783f4bc24e36d5f2653bb57beef485b87860bd[m
+Merge: 49cdad5 9f7d653
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Sat Apr 19 16:50:58 2025 -0300
+
+    Merge pull request #3 from frlp-utn-ingsoft/refactor/accounts
+    
+    Refactor/accounts
+
+[33mcommit 9f7d653e012b27f0e71303d371f30f69c4854cf7[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sat Apr 19 16:23:53 2025 -0300
+
+    Cambia los assert por expect para mejorar la integracion con playwright. Usa get_by_label para tambien testear accesibilidad
+
+[33mcommit 5947fa86a18adf9c05d204174857c9273b1fa773[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sat Apr 19 16:22:42 2025 -0300
+
+    Agrega soporte para crear usuario organizadores
+
+[33mcommit bf8e1f9dc4dfa80b9dd814a579eb63d813680898[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sat Apr 19 15:05:26 2025 -0300
+
+    Simplifica la maqueta. Usamos vstack en lugar de mb
+
+[33mcommit 4de95227e7e3bbdf82058b1f01b793d487f7524f[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Sat Apr 19 14:58:40 2025 -0300
+
+    Mejora el responsive
+
+[33mcommit 3d2a0e25bf7ba9636685cd9b41920b7639acf157[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Fri Apr 18 19:55:27 2025 -0300
+
+    Agrega playwrigth
+
+[33mcommit c987d9a3219e6c5162ec0344aa5e6bc6e6ad2247[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Fri Apr 18 19:53:34 2025 -0300
+
+    Agrega test para el modelo de usuario, registracion y login
+
+[33mcommit 795c5986ca8c5bc76bbb1a70d348951ddf69939f[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Fri Apr 18 19:26:52 2025 -0300
+
+    No vamos a usar admin ni forms
+
+[33mcommit c21a3a759b9393842d8cd967ed1ba4e4858ed161[m
+Author: Rodrigo Jacznik <rodrigo.jacznik@501labs.com.ar>
+Date:   Fri Apr 18 18:29:20 2025 -0300
+
+    Mejora la UI en el manejo de accounts. Pasa todo lo de accounts a la app
+    
+    Desactiva el admin para pasar todos los CRUDS a la UI de la app.
+    Pasa los forms a custom forms de django. Hacemos esto para tener más
+    control de la UI.
+    Pasa todo lo de account a app para que sea más fácil encontrar donde
+    hacer los cambios en el código. Probablemente todo lo referido a las
+    accounts debería estar en su propia app para aumentar la modularización.
+
+[33mcommit 49cdad5c9c525ffdc85ae68ea5ee6cd0e2c7c046[m
+Merge: 57dce65 0eea591
+Author: Rodrigo Jacznik <jacznik.rodrigo@gmail.com>
+Date:   Fri Apr 18 17:51:42 2025 -0300
+
+    Merge pull request #2 from frlp-utn-ingsoft/refactor/lint
+    
+    Soluciona sugerencias del linter
+
+[33mcommit 0eea591885b4d26ee240bfc5d21a5e7b46c79103[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Fri Apr 18 14:11:32 2025 -0300
+
+    Agrega config para vscode y recomendaciones de extensiones
+
+[33mcommit cd3533e67d52b2237642fddee216a1235292cf43[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Fri Apr 18 14:02:35 2025 -0300
+
+    Modifica archivos con el formateo de ruff
+
+[33mcommit 06589d81989f8d0aaf2a88792a27262142431514[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Fri Apr 18 13:16:55 2025 -0300
+
+    Arregla errores de lint
+
+[33mcommit 8ca6c2b644dac73ac4b9bfefafb822d94ce41522[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Fri Apr 18 13:12:29 2025 -0300
+
+    Actualiza sintaxis de ruff
+
+[33mcommit 57dce654f1b79870f60663cf6763f5d72d75ef91[m
+Merge: 21c8bee d4e2856
+Author: Rodrigo Jacznik <jacznik.rodrigo@gmail.com>
+Date:   Fri Apr 18 12:38:41 2025 -0300
+
+    Merge pull request #1 from frlp-utn-ingsoft/feature/tests_unit_integration
+    
+    Tests de unidad e integración
+
+[33mcommit d4e28564c21faa6dd458d6607e25c8420e6bd0e6[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Fri Apr 18 11:58:48 2025 -0300
+
+    Modifica estructura de tests para separar por entidad
+
+[33mcommit ee4cdb3a98e462bfd0abd729345b1f603211cfb5[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Thu Apr 17 14:32:41 2025 -0300
+
+    Agrega primeros tests de integracion y unidad
+
+[33mcommit b7e768a2cc303b29397c2255776f7ba95c6cb41e[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Thu Apr 17 14:32:22 2025 -0300
+
+    Quita location de los templates
+
+[33mcommit 21c8bee2f7c55483d87927986bb0247c01a32691[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Thu Apr 17 14:19:40 2025 -0300
+
+    Completa instrucciones para iniciar la base de datos
+
+[33mcommit 67daefce35b3446c9fd236f8a1ab66bea4249184[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Thu Apr 17 14:19:09 2025 -0300
+
+    Arregla fixture
+
+[33mcommit e96951fce2afc783092070e0cc17f259f27bc864[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Thu Apr 17 14:11:59 2025 -0300
+
+    Quita atributo de ubicacíon y agrega validacion de campos
+
+[33mcommit 1c70f15b316dc01833829cc24dc8113274c5aabe[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Thu Apr 17 14:10:52 2025 -0300
+
+    Agrega configuracion de editorconfig
+
+[33mcommit 1487b567ec5039f333fc4a6bc3dee9c95358fc62[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Mon Apr 14 14:05:02 2025 -0300
+
+    Actualiza librerias
+
+[33mcommit 8a0e6da06846270cbd7ce1cfe2efda7ccc81579f[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Mon Apr 14 13:07:16 2025 -0300
+
+    Agrega estructura inicial del proyecto con funcionalidad basica
+
+[33mcommit a218abe9ce9171c1500bf9a8108b29b5e6c895df[m
+Author: Ivan D'Uva <duva.ivan@outlook.com>
+Date:   Mon Apr 14 13:06:12 2025 -0300
+
+    Primer commit

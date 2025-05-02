@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h1>Categorías</h1>
+    {% if user.is_organizer %}
+    <a href="{% url 'category_new' %}" class="btn btn-primary mb-3">+ Nueva categoría</a>
+    {% endif %}
+
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} mt-3">
+        {{ message }}
+      </div>
+    {% endfor %}
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th class="text-center">Nombre</th>
+          <th class="text-center">Descripción</th>
+          <th class="text-center">Activo</th>
+          <th class="text-center">Eventos</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for category in categories %}
+          <tr>
+            <td>{{ category.name }}</td>
+            <td>{{ category.description }}</td>
+            <td class="text-center">
+              {% if category.is_active %}
+                <span class="badge bg-success">Sí</span>
+              {% else %}
+                <span class="badge bg-secondary">No</span>
+              {% endif %}
+            </td>
+            <td class="text-center">{{ category.event_count }}</td>  
+            <td>
+              {% if user.is_organizer %}
+              <a href="{% url 'category_edit' category.id %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post"
+                    action="{% url 'category_delete' category.id %}"
+                    style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              {% endif %}
+              {% if request.user.is_active %}
+                <a href="{% url 'category_events' category.id %}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye"></i>
+                </a>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="text-center">No hay categorías aún.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

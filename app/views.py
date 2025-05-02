@@ -167,11 +167,28 @@ def ticket_delete(request,ticket_code):
             ticket.soft_delete()
             print("ticket eliminado con exito!")
             return redirect("events")
-        elif request.user.name == ticket.user.username:
+        elif request.user.username == ticket.user.username:
             ticket.soft_delete()
             print("ticket eliminado con exito!")
             return redirect("tickets")
     return redirect("events")
+
+
+def ticket_edit(request,ticket_code):
+    if(request.method == "POST"):
+        quantity = request.POST.get("quantity")
+        type = request.POST.get("type")
+        ticket = Ticket.objects.filter(ticket_code = ticket_code, user=request.user).first()
+        if ticket:
+            ticket.update(quantity=quantity, type=type)
+            messages.success(request, f"¡Exito! ticket editado correctamente")
+            return render(request, "app/ticket_edit_form.html",{"ticket":ticket})
+
+
+def ticket_edit_form(request,ticket_code):
+    ticket = Ticket.objects.filter(ticket_code = ticket_code, user=request.user).first()
+    return render(request, "app/ticket_edit_form.html",{"ticket":ticket})
+
 
 
 @login_required

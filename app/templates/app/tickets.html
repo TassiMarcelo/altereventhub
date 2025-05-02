@@ -34,7 +34,7 @@
                     <td>{{ ticket.ticket_code }}</td>
                     <td>
                         <div class="hstack gap-1">
-                            <a href="{% url 'home' %}"
+                            <a href="{% url 'ticket_edit_form' ticket.ticket_code %}"
                                 class="btn btn-sm btn-outline-secondary"
                                 aria-label="Editar"
                                 title="Editar">

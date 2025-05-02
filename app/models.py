@@ -132,11 +132,8 @@ class Ticket(models.Model):
         return ticket
 
     def update(self, buy_date=None, quantity=None, type=None, event=None, user=None): # Modificación
-        self.buy_date = buy_date or self.buy_date
         self.quantity = quantity or self.quantity
         self.type = type or self.type
-        self.event = event or self.event
-        self.user = user or self.user
         self.save()
 
     def soft_delete(self): # Baja lógica

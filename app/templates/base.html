@@ -77,11 +77,28 @@
                                 {% navbar_link 'venue' 'Ubicaciones' %}
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'reembolsos_eventos' %}">
-                                    Reembolsos
-                                </a>
+                                {% if user.is_authenticated and user.is_organizer %}
+                                    <a class="nav-link" href="{% url 'reembolsos_eventos' %}">
+                                        Reembolsos
+                                    </a>
+                                {% else %}
+                                    <!-- Desplegable para usuarios no organizadores -->
+                                    <div class="dropdown">
+                                        <button class="nav-link dropdown-toggle" type="button" id="reembolsoDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Reembolsos
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="reembolsoDropdown">
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'solicitar_reembolso' %}">Solicitar reembolso</a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'my_refund' %}">Mis reembolsos</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                {% endif %}
                             </li>
-                        </ul>
+                         </ul>
                     </div>
 
                     <form

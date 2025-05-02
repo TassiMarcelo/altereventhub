@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-5">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
+        <div class="col-12">
             <h1 class="mb-4">            
                     Mis reembolsos
             </h1>
@@ -12,8 +12,14 @@
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
                         <strong> Código del ticket: {{ reembolso.ticket_code }} </strong>
-                        <small class="text-muted"> - solicitado el {{ reembolso.created_at|date:"d/m/Y" }} a las {{ reembolso.created_at|date:"H:i" }}</small>
-                    </div>
+                        <small class="text-muted">
+                            - solicitado el {{ reembolso.created_at|date:"d/m/Y" }} a las {{ reembolso.created_at|date:"H:i" }}
+                            
+                           <small> - </small>
+
+                            <strong>Estado: {{ reembolso.get_status_display }}</strong>
+                        </small>
+                                            </div>
                     <div class="btn-group" role="group">
          <button
                      type="button"

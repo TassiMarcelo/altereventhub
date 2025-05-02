@@ -12,22 +12,32 @@
         <label for="id_name" class="form-label">Nombre</label>
         <input
           type="text"
-          class="form-control"
+          class="form-control {% if errors.name %}is-invalid{% endif %}"
           id="id_name"
           name="name"
-          value="{{ category.name|default_if_none:'' }}"
+          value="{{ category.name|default:'' }}"
           required
         >
+        {% if errors.name %}
+        <div class="invalid-feedback">
+          {{ errors.name|join:", " }}
+        </div>
+        {% endif %}
       </div>
 
       <div class="mb-3">
         <label for="id_description" class="form-label">Descripción</label>
         <textarea
-          class="form-control"
+          class="form-control {% if errors.description %}is-invalid{% endif %}"
           id="id_description"
           name="description"
           rows="3"
         >{{ category.description|default_if_none:'' }}</textarea>
+        {% if errors.description %}
+        <div class="invalid-feedback">
+            {{ errors.description|join:", " }}
+        </div>
+        {% endif %}
       </div>
 
       <div class="form-check mb-4">
@@ -40,17 +50,6 @@
         >
         <label for="id_is_active" class="form-check-label">Activa</label>
       </div>
-
-      {% if errors %}
-        <div class="alert alert-danger">
-          <ul class="mb-0">
-            {% for field, msgs in errors.items %}
-              <li><strong>{{ field }}:</strong> {{ msgs|join:", " }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-      {% endif %}
-
       <button type="submit" class="btn btn-primary">
         {% if category %}Guardar cambios{% else %}Crear categoría{% endif %}
       </button>

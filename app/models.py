@@ -30,6 +30,7 @@ class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
+    events = models.ManyToManyField("Event", related_name="category_events", blank=True)
     
 
     def clean(self):
@@ -54,7 +55,7 @@ class Event(models.Model):
     organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_events")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    categories = models.ManyToManyField(Category, related_name="events", blank=True)
+    categories = models.ManyToManyField(Category, related_name="events_categories", blank=True)
 
     def __str__(self):
         return self.title

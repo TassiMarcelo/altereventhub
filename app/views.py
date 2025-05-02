@@ -327,6 +327,10 @@ def editar_reembolso(request, id):
     reembolso = get_object_or_404(RefundRequest, id=id, requester=request.user)
 
     if request.method == "POST":
+        print("Datos recibidos:")
+        print(f"Motivo: {request.POST.get('reason')}")
+        print(f"Detalles: {request.POST.get('details')}")
+        
         reembolso.reason = request.POST.get("reason")
         reembolso.details = request.POST.get("details")
         reembolso.save()

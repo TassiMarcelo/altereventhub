@@ -11,19 +11,38 @@
                 {% for reembolso in reembolsos %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
-                        <strong>{{ reembolso.ticket_code }}</strong> - {{ reembolso.get_reason_display }} 
-                        <small class="text-muted">({{ reembolso.created_at|date:"d/m/Y H:i" }})</small>
+                        <strong> Código del ticket: {{ reembolso.ticket_code }} </strong>
+                        <small class="text-muted"> - solicitado el {{ reembolso.created_at|date:"d/m/Y" }} a las {{ reembolso.created_at|date:"H:i" }}</small>
                     </div>
                     <div class="btn-group" role="group">
-                        <!-- Ver -->
-                        <a href="{% url 'view_comment' reembolso.id %}" class="btn btn-outline-secondary btn-sm" title="Ver">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        <!-- Editar -->
-                        <a href="{% url 'editar_reembolso' reembolso.id %}" class="btn btn-outline-primary btn-sm" title="Editar">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <!-- Eliminar -->
+         <button
+                     type="button"
+                     class="btn btn-outline-secondary btn-sm ver-detalle-btn"
+                     title="Ver"
+                     data-bs-toggle="modal"
+                     data-bs-target="#detalleReembolsoModal"
+                     data-ticket="{{ reembolso.ticket_code }}"
+                     data-reason="{{ reembolso.get_reason_display }}"
+                     data-details="{{ reembolso.details|escapejs }}"
+                     data-fecha="{{ reembolso.created_at|date:'d/m/Y H:i' }}"
+>
+    <i class="bi bi-eye"></i>
+    </button>
+                            
+        <button
+        type="button"
+        class="btn btn-outline-primary btn-sm"
+        title="Editar"
+        data-bs-toggle="modal"
+        data-id="{{ reembolso.id }}"
+        data-bs-target="#editarReembolsoModal"
+        data-ticket="{{ reembolso.ticket_code }}"
+        data-reason="{{ reembolso.reason }}"
+        data-details="{{ reembolso.details|escapejs }}"
+        >
+        <i class="bi bi-pencil"></i>
+        </button>
+
                         <a href="{% url 'eliminar_reembolso' reembolso.id %}" class="btn btn-outline-danger btn-sm" title="Eliminar">
                             <i class="bi bi-trash"></i>
                         </a>
@@ -38,5 +57,97 @@
     </div>
 
 </div>
+<div class="modal fade" id="detalleReembolsoModal" tabindex="-1" aria-labelledby="detalleReembolsoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="detalleReembolsoModalLabel">Detalle del reembolso</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Código del ticket:</strong> <span id="modalTicket"></span></p>
+          <p><strong>Motivo:</strong> <span id="modalMotivo"></span></p>
+          <p><strong>Fecha de solicitud:</strong> <span id="modalFecha"></span></p>
+          <p><strong>Detalles adicionales:</strong></p>
+          <p id="modalDetalles" class="border rounded p-2 bg-light" style="white-space: pre-wrap;"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.ver-detalle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('modalTicket').textContent = btn.dataset.ticket;
+                document.getElementById('modalMotivo').textContent = btn.dataset.reason;
+                document.getElementById('modalFecha').textContent = btn.dataset.fecha;
+                let detalles = btn.dataset.details.replace(/\\u000D\\u000A/g, '<br>');
+                document.getElementById('modalDetalles').innerHTML = detalles;
+            });
+        });
+    });
+    </script>
 
-{% endblock %}
+
+<div class="modal fade" id="editarReembolsoModal" tabindex="-1" aria-labelledby="editarReembolsoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editarReembolsoModalLabel">Editar Solicitud de Reembolso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" id="formEditarReembolso" action="">
+                    {% csrf_token %}
+                    <input type="hidden" id="modalReembolsoId">
+
+                    <div class="mb-3">
+                        <label for="ticket_code" class="form-label">Código del ticket</label>
+                        <input type="text" class="form-control" id="modalTicketCode" name="ticket_code" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label for="refund_reason" class="form-label">Motivo del reembolso</label>
+                        <select class="form-select" id="modalRefundReason" name="reason">
+                            <option value="no_asistencia">Impedimento para asistir</option>
+    <option value="evento_cancelado">Evento modificado</option>
+    <option value="error_compra">Error en la compra</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="details" class="form-label">Detalles adicionales</label>
+                        <textarea class="form-control" id="modalDetails" name="details" rows="4"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const botonesEdicion = document.querySelectorAll('[data-bs-target="#editarReembolsoModal"]');
+        botonesEdicion.forEach(boton => {
+            boton.addEventListener('click', function() {
+                const id = boton.dataset.id;
+
+                document.getElementById('modalTicketCode').value = boton.dataset.ticket;
+                document.getElementById('modalRefundReason').value = boton.dataset.reason;
+                document.getElementById('modalDetails').value = boton.dataset.details.replace(/\\u000D\\u000A/g, '\n');
+                document.getElementById('modalReembolsoId').value = boton.dataset.id;
+
+                const form = document.getElementById('formEditarReembolso');
+                form.action = `/refund/edit/${id}/`;
+            });
+        });
+    });
+</script>
+    
+  
+  {% endblock %}

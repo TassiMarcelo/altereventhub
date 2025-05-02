@@ -231,11 +231,17 @@ class Comment(models.Model):
         verbose_name_plural = "Comentarios"
 # intervengo
 
+REASON_CHOICES = [
+    ('no_asistencia', 'Impedimento para asistir'),
+    ('evento_cancelado', 'Evento modificado'),
+    ('error_compra', 'Error en la compra'),
+]
+
 class RefundRequest(models.Model):
     approved = models.BooleanField(default=False)
     #convertir el ticket_code de ticket a string para compararlo con este str(ticket.ticket_code) == refund_request.ticket_code
     ticket_code = models.CharField(max_length=255)
-    reason = models.CharField(max_length=100)
+    reason = models.CharField(max_length=100, choices=REASON_CHOICES)
     details = models.TextField(blank=True, default="")
     approval_date = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

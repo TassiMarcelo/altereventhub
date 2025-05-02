@@ -134,7 +134,7 @@
       <div class="card shadow-sm mb-4">
         <div class="card-body">
           <h2 class="card-title text-primary mb-4 fs-3">
-            Compras ({{ event.tickets.count }})
+            Compras ({{ event.active_tickets.count }})
           </h2>
           
           {% for ticket in event.active_tickets %}
@@ -162,7 +162,7 @@
               </div>
             </div>
           {% empty %}
-            <p class="text-muted">No hay comentarios aún.</p>
+            <p class="text-muted">No hay compras aún.</p>
           {% endfor %}
         </div>
       </div>

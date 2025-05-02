@@ -238,8 +238,16 @@ REASON_CHOICES = [
 ]
 
 class RefundRequest(models.Model):
-    approved = models.BooleanField(default=False)
-    #convertir el ticket_code de ticket a string para compararlo con este str(ticket.ticket_code) == refund_request.ticket_code
+    class Status(models.TextChoices):
+        PENDING = 'pendiente', 'Pendiente'
+        APPROVED = 'aprobado', 'Aprobado'
+        REJECTED = 'rechazado', 'Rechazado'
+
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.PENDING
+    )
     ticket_code = models.CharField(max_length=255)
     reason = models.CharField(max_length=100, choices=REASON_CHOICES)
     details = models.TextField(blank=True, default="")
@@ -256,17 +264,14 @@ class RefundRequest(models.Model):
 
         if ticket_code == "":
             errors["ticket_code"] = "Por favor ingrese el código del ticket"
-
         if reason == "":
             errors["reason"] = "Por favor ingrese el motivo del reembolso"
 
-
-        
+        return errors
 
     @classmethod
     def new(cls, ticket_code, reason, details, requester):
         errors = cls.validate(ticket_code, reason)
-
         if errors:
             return False, errors
 
@@ -276,19 +281,26 @@ class RefundRequest(models.Model):
             details=details,
             requester=requester,
         )
-
         return True, None
 
     def approve(self):
-        self.approved = True
+        self.status = self.Status.APPROVED
         self.approval_date = timezone.now()
         self.save()
 
-    def update(self, ticket_code=None, reason=None, approved=None, approval_date=None):
+    def reject(self):
+        self.status = self.Status.REJECTED
+        self.approval_date = timezone.now()
+        self.save()
+
+    def update(self, ticket_code=None, reason=None):
         if ticket_code:
             self.ticket_code = ticket_code
         if reason:
             self.reason = reason
+        self.save()
+
+
 class Rating(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)

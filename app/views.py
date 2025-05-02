@@ -7,6 +7,8 @@ from django.utils import timezone
 from django.contrib import messages
 from .models import Comment, Event
 from .forms import CommentForm
+from django.http import JsonResponse
+
 
 from .models import Event, User, Ticket, RefundRequest
 from .forms import RatingForm
@@ -349,7 +351,42 @@ def eliminar_reembolso(request, id):
         return redirect("my_refund")
 
     return HttpResponseForbidden("Método no permitido.") 
+
+ # Filtrar las solicitudes de reembolso x eventos del organizador
+@login_required
+def reembolsos_eventos(request):
+    if not request.user.is_authenticated or not request.user.is_organizer:
+        return render(request, '403.html')
+    eventos_del_organizador = Event.objects.filter(organizer=request.user)
+    tickets = Ticket.objects.filter(event__in=eventos_del_organizador)
+    ticket_map = {str(ticket.ticket_code): ticket for ticket in tickets}
+    refunds = RefundRequest.objects.filter(ticket_code__in=ticket_map.keys())
+
+    for refund in refunds:
+        refund.ticket = ticket_map.get(refund.ticket_code)
+        refund.event = refund.ticket.event if refund.ticket else None
     
+    return render(request, "reembolsos_eventos.html", {'refunds': refunds})    
+def aprobar_reembolso(request, refund_id):
+    refund = get_object_or_404(RefundRequest, id=refund_id)
+    if request.method == 'POST':
+        refund.approve()
+        return JsonResponse({
+            "status": "success",
+            "new_status": refund.get_status_display()
+        })
+    return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
+
+def rechazar_reembolso(request, refund_id):
+    refund = get_object_or_404(RefundRequest, id=refund_id)
+    if request.method == 'POST':
+        refund.reject()
+        return JsonResponse({
+            "status": "success",
+            "new_status": refund.get_status_display()
+        })
+    return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
+
 from django.db import IntegrityError
 from django.db.transaction import atomic
 

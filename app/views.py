@@ -126,6 +126,7 @@ def event_form(request, id=None):
         description = request.POST.get("description")
         date = request.POST.get("date")
         time = request.POST.get("time")
+        venue_id = request.POST.get("venueSelect")
 
         [year, month, day] = date.split("-")
         [hour, minutes] = time.split(":")
@@ -133,23 +134,24 @@ def event_form(request, id=None):
         scheduled_at = timezone.make_aware(
             datetime.datetime(int(year), int(month), int(day), int(hour), int(minutes))
         )
-
+        venue = get_object_or_404(Venue, pk=venue_id)
         if id is None:
-            Event.new(title, description, scheduled_at, request.user)
+            Event.new(title, description,venue,scheduled_at, request.user)
         else:
             event = get_object_or_404(Event, pk=id)
-            event.update(title, description, scheduled_at, request.user)
+            event.update(title, description,venue, scheduled_at, request.user)
 
         return redirect("events")
 
     event = {}
     if id is not None:
         event = get_object_or_404(Event, pk=id)
+    venues = Venue.objects.filter(bl_baja=0)
 
     return render(
         request,
         "app/event_form.html",
-        {"event": event, "user_is_organizer": request.user.is_organizer},
+        {"event": event,"venues":venues, "user_is_organizer": request.user.is_organizer},
     )
 
 
@@ -491,13 +493,18 @@ def venue_baja(request,id=None):
     venue = {}
     
     if request.method == "POST":
-        venue = get_object_or_404(Venue, pk=id)
+        venue = get_object_or_404(Venue, pk=id,bl_baja=0)
         if venue.bl_baja:
             messages.error(request, f'No se puede  de baja la ubicacion ya que se encuentra dada de baja o no existe.')
         else:
-            venue.venue_baja()
-            messages.success(request, f'Se eliminó correctamente la ubicación "{venue.name}".')
-            return redirect("venue")
+            eventos_activos = venue.events.all()
+            
+            if eventos_activos:
+                messages.error(request, f'No se puede  de baja la ubicacion ya que se encuentra en Eventos.')
+            else:
+                venue.venue_baja()
+                messages.success(request, f'Se eliminó correctamente la ubicación "{venue.name}".')
+                return redirect("venue")
     else:
         messages.error(request, f'No se puede dar de baja la ubicacion ya que se encuentra dada de baja o no existe.')
     return redirect("venue")

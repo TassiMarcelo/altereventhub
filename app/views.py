@@ -9,6 +9,7 @@ from .models import Comment, Event
 from .forms import CommentForm
 from django.http import JsonResponse
 
+from django.db.models import Prefetch
 
 from .models import Event, User, Ticket, RefundRequest
 from .forms import RatingForm
@@ -72,13 +73,14 @@ def home(request):
 
 @login_required
 def events(request):
-    events = Event.objects.all().order_by("scheduled_at")
+    tickets = Prefetch('tickets', queryset=Ticket.objects.filter(bl_baja=False))
+    events = Event.objects.prefetch_related(tickets).order_by("scheduled_at")
+    
     return render(
         request,
         "app/events.html",
         {"events": events, "user_is_organizer": request.user.is_organizer},
     )
-
 
 from .forms import RatingForm
 
@@ -163,9 +165,34 @@ def tickets(request):
 
 @login_required
 def ticket_delete(request,ticket_code):
-    tickets = Ticket.objects.filter(user=request.user,ticket_code=ticket_code)
-    tickets[0].soft_delete()
-    return redirect("tickets")
+    ticket = Ticket.objects.filter(ticket_code=ticket_code).first()
+    if ticket:
+        if request.user.is_organizer: #TODO: Verificar que sea el creador del evento del ticket
+            ticket.soft_delete()
+            print("ticket eliminado con exito!")
+            return redirect("events")
+        elif request.user.username == ticket.user.username:
+            ticket.soft_delete()
+            print("ticket eliminado con exito!")
+            return redirect("tickets")
+    return redirect("events")
+
+
+def ticket_edit(request,ticket_code):
+    if(request.method == "POST"):
+        quantity = request.POST.get("quantity")
+        type = request.POST.get("type")
+        ticket = Ticket.objects.filter(ticket_code = ticket_code, user=request.user).first()
+        if ticket:
+            ticket.update(quantity=quantity, type=type)
+            messages.success(request, f"¡Exito! ticket editado correctamente")
+            return render(request, "app/ticket_edit_form.html",{"ticket":ticket})
+
+
+def ticket_edit_form(request,ticket_code):
+    ticket = Ticket.objects.filter(ticket_code = ticket_code, user=request.user).first()
+    return render(request, "app/ticket_edit_form.html",{"ticket":ticket})
+
 
 
 @login_required

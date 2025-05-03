@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+{% if messages %}
+<script>
+    {% for message in messages %}
+        alert("{{ message|escapejs }}");
+    {% endfor %}
+</script>
+{% endif %}
+
+
+<div class="container mt-5">
+    <div class="card shadow-lg">
+        <div class="card-header text-center">
+            <h2>Editar entrada para "{{ ticket.event.title }}"</h2>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">{{ ticket.event.description }}</p>
+            <p><strong>Fecha:</strong> {{ ticket.event.scheduled_at|date:"d/m/Y H:i" }}</p>
+            <p><strong>Organizado por:</strong> {{ ticket.event.organizer.username }}</p>
+
+            <hr>
+
+            <form method="POST" action="{% url 'ticket_edit' ticket.ticket_code %}">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="type" class="form-label">Tipo de Entrada</label>
+                    <select class="form-select" id="type" name="type" required>
+                        <option value="GENERAL">General</option>
+                        <option value="VIP">VIP</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="quantity" class="form-label">Cantidad</label>
+                    <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">Editar</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

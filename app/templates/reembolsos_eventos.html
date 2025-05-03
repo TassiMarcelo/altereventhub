@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Solicitudes de Reembolso de tus Eventos</h2>
+  <table class="table table-bordered mt-3" id="refunds-table">
+    <thead class="table-dark">
+      <tr>
+        <th>Código de Entrada</th>
+        <th>Evento</th>
+        <th>Solicitante</th>
+        <th>Fecha de Solicitud</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for refund in refunds %}
+      <tr id="refund-{{ refund.id }}">
+        <td>{{ refund.ticket_code }}</td>
+        <td>{{ refund.event.title }}</td>
+        <td>{{ refund.requester.username }}</td>
+        <td>{{ refund.created_at|date:"d/m/Y H:i" }}</td>
+        <td class="status-cell">{{ refund.get_status_display }}</td>
+        <td>
+          <!-- Botón de ver detalles -->
+          <button class="btn btn-sm btn-info ver-detalle-btn"
+            data-bs-toggle="modal" data-bs-target="#detalleReembolsoModal"
+            data-ticket="{{ refund.ticket_code }}"
+            data-reason="{{ refund.get_reason_display }}"
+            data-fecha="{{ refund.created_at|date:"d/m/Y H:i" }}"
+            data-details="{{ refund.details|escapejs }}"
+            data-requester="{{ refund.requester.get_full_name|default:refund.requester.username }}">
+            <i class="bi bi-eye"></i>
+          </button>
+
+          <!-- Botón de aprobar solicitud -->
+          <button class="btn btn-sm btn-success aprobar-btn" data-refund-id="{{ refund.id }}">
+            <i class="bi bi-check-circle"></i>
+          </button>
+          
+          <!-- Botón de rechazar solicitud -->
+          <button class="btn btn-sm btn-danger rechazar-btn" data-refund-id="{{ refund.id }}">
+            <i class="bi bi-x-circle"></i>
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal de detalles -->
+<div class="modal fade" id="detalleReembolsoModal" tabindex="-1" aria-labelledby="detalleReembolsoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="detalleReembolsoModalLabel">Detalle del reembolso</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Código del ticket:</strong> <span id="modalTicket"></span></p>
+          <p><strong>Solicitante:</strong> <span id="modalSolicitante"></span></p>
+          <p><strong>Motivo:</strong> <span id="modalMotivo"></span></p>
+          <p><strong>Fecha de solicitud:</strong> <span id="modalFecha"></span></p>
+          <p><strong>Detalles adicionales:</strong></p>
+          <p id="modalDetalles" class="border rounded p-2 bg-light" style="white-space: pre-wrap;"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Aprobar solicitud
+    document.querySelectorAll('.aprobar-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        let refundId = this.dataset.refundId;
+        fetch(`/reembolsos/aprobar/${refundId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,  
+        },  
+        body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            document.querySelector(`#refund-${refundId} .status-cell`).textContent = data.new_status;
+          } else {
+            alert(data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error al aprobar la solicitud:', error);
+        });
+      });
+    });
+
+    // Rechazar solicitud
+    document.querySelectorAll('.rechazar-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            let refundId = this.dataset.refundId;
+            fetch(`/reembolsos/rechazar/${refundId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,  
+                },
+                body: JSON.stringify({})  
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.querySelector(`#refund-${refundId} .status-cell`).textContent = data.new_status;
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error al rechazar la solicitud:', error);
+            });
+        });
+    });
+});
+
+    // Mostrar detalles en el modal
+    document.querySelectorAll('.ver-detalle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('modalTicket').textContent = btn.dataset.ticket;
+        document.getElementById('modalSolicitante').textContent = btn.dataset.requester;
+        document.getElementById('modalMotivo').textContent = btn.dataset.reason;
+        document.getElementById('modalFecha').textContent = btn.dataset.fecha;
+        document.getElementById('modalDetalles').innerHTML = btn.dataset.details.replace(/\n/g, "<br>");
+      });
+    });
+</script>
+
+{% endblock %}

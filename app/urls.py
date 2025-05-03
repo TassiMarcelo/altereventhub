@@ -32,6 +32,12 @@ urlpatterns = [
     path('organizer/comments/', views.organizer_comments, name='organizer_comments'),
     path('reembolso/solicitar/', views.solicitar_reembolso, name='solicitar_reembolso'),
     path('refund/request/', views.solicitar_reembolso, name='solicitar_reembolso'),
+    path('refund/myrefund/', views.my_refund, name='my_refund'),
+    path('refund/edit/<int:id>/', views.editar_reembolso, name='editar_reembolso'),
+    path('refund/delete/<int:id>/', views.eliminar_reembolso, name='eliminar_reembolso'),
+    path('reembolsos/', views.reembolsos_eventos, name='reembolsos_eventos'),
+    path('reembolsos/aprobar/<int:refund_id>/', views.aprobar_reembolso, name='aprobar_reembolso'),
+    path('reembolsos/rechazar/<int:refund_id>/', views.rechazar_reembolso, name='rechazar_reembolso'),
 
     path('event/<int:event_id>/rating/create/', views.create_rating, name='create_rating'),
     path('event/<int:event_id>/rating/<int:rating_id>/update/', views.update_rating, name='update_rating'),

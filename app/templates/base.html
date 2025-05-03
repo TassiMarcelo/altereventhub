@@ -5,6 +5,8 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+
     <title>{% block title %}EventHub{% endblock %}</title>
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css"
@@ -22,9 +24,9 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    
-    
+    <script>
+        const csrfToken = document.querySelector('[name=csrf-token]').content;
+    </script>
 </head>
 
 <body>
@@ -74,7 +76,29 @@
                             <li class="nav-item">
                                 {% navbar_link 'venue' 'Ubicaciones' %}
                             </li>
-                        </ul>
+                            <li class="nav-item">
+                                {% if user.is_authenticated and user.is_organizer %}
+                                    <a class="nav-link" href="{% url 'reembolsos_eventos' %}">
+                                        Reembolsos
+                                    </a>
+                                {% else %}
+                                    <!-- Desplegable para usuarios no organizadores -->
+                                    <div class="dropdown">
+                                        <button class="nav-link dropdown-toggle" type="button" id="reembolsoDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Reembolsos
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="reembolsoDropdown">
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'solicitar_reembolso' %}">Solicitar reembolso</a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'my_refund' %}">Mis reembolsos</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </li>
+                         </ul>
                     </div>
 
                     <form
@@ -93,7 +117,7 @@
                     <a
                         class="btn btn-sm btn-outline-primary"
                         href="{% url 'login' %}"
-                    >Ingresá</>
+                    >Ingresá</a>
                     <a
                         class="btn btn-sm btn-primary"
                         href="{% url 'register' %}"

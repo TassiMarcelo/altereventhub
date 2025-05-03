@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Comentario</h2>
+    <div class="card">
+        <div class="card-body">
+            <h5>{{ comment.title }}</h5>
+            <p>{{ comment.text }}</p>
+            <small class="text-muted">
+                Por {{ comment.user.username }} el {{ comment.created_at|date:"d/m/Y H:i" }}
+            </small>
+        </div>
+    </div>
+    <div class="mt-3">
+        <a href="{% url 'organizer_comments' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver a Comentarios
+        </a>
+        {% if user == comment.user or user == comment.event.organizer %}
+            <a href="{% url 'delete_comment' comment.id %}?next={% url 'organizer_comments' %}"
+                class="btn btn-danger float-end"
+                onclick="return confirm('¿Eliminar este comentario?')">
+                <i class="bi bi-trash"></i> Eliminar
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

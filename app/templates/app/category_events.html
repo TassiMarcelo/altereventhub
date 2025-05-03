@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Eventos de {{ category.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Eventos en la categoría: {{ category.name }}</h1>
+    <a href="{% url 'category_list' %}" class="btn btn-secondary mb-3">Volver a las categorías</a>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Título</th>
+                <th>Descripción</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+                <tr>
+                    <td>{{ event.title }}</td>
+                    <td>{{ event.description }}</td>
+                    <td>{{ event.scheduled_at|date:"d b Y, H:i" }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center">No hay eventos en esta categoría</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

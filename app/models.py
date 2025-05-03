@@ -1,10 +1,10 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
 import uuid
 from django.utils import timezone
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
-
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)
@@ -29,6 +29,27 @@ class User(AbstractUser):
             errors["password"] = "Las contraseñas no coinciden"
 
         return errors
+
+class Category(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    events = models.ManyToManyField("Event", related_name="category_events", blank=True)
+    
+
+    def clean(self):
+        if not self.name.strip():
+            raise ValidationError("El nombre de la categoria no puede estar vacio")
+
+        existing = Category.objects.filter(name=self.name, is_active=True)
+        if self.pk:
+            existing = existing.exclude(pk=self.pk) 
+
+        if self.is_active and existing.exists():
+            raise ValidationError("El nombre de la categoria ya existe")
+
+    def __str__(self):
+        return self.name    
 
 
 class Venue(models.Model):
@@ -97,13 +118,13 @@ class Event(models.Model):
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name="events")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+    categories = models.ManyToManyField(Category, related_name="events_categories", blank=True)
 
     def __str__(self):
         return self.title
 
     @classmethod
-    def validate(cls, title, description,venue, scheduled_at):
+    def validate(cls, title, description,venue, scheduled_at, categories=None):
         errors = {}
 
         if title == "":
@@ -115,6 +136,9 @@ class Event(models.Model):
         if venue is None:
             errors["venueSelect"] = "Por favor ingrese una ubicacion"
         
+        if categories is None or len(categories) == 0:
+            errors["categories"] = "Por favor ingrese al menos una categoria"
+
         return errors
 
 
@@ -123,30 +147,33 @@ class Event(models.Model):
         return self.tickets.filter(bl_baja=False)
 
     @classmethod
-    def new(cls, title, description,venue, scheduled_at, organizer):
-        errors = Event.validate(title, description,venue,scheduled_at)
+    def new(cls, title, description,venue, scheduled_at, organizer, categories=None):
+        errors = cls.validate(title, description, scheduled_at, categories)
 
-        if len(errors.keys()) > 0:
+        if errors:
             return False, errors
-        
-        Event.objects.create(
+
+        event = cls.objects.create(
             title=title,
             description=description,
             venue=venue,
             scheduled_at=scheduled_at,
             organizer=organizer,
         )
-
+        if categories:
+            event.categories.set(categories)
         return True, None
 
-    def update(self, title, description,venue, scheduled_at, organizer):
+    def update(self, title, description,venue, scheduled_at, organizer, categories=None):
         self.title = title or self.title
         self.description = description or self.description
         self.scheduled_at = scheduled_at or self.scheduled_at
         self.organizer = organizer or self.organizer
         self.venue = venue or self.venue
         self.save()
-
+        if categories is not None:
+            self.categories.set(categories)
+        return True
 
 # Realizar la alta, baja y modificación. El formulario de creación y edición debe tener validaciones server-side.
 '''
@@ -329,3 +356,5 @@ class Rating(models.Model):
         self.bl_baja = True
         self.is_current = False
         self.save()
+
+   

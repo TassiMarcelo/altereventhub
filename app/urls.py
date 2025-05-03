@@ -51,4 +51,10 @@ urlpatterns = [
     path("venue/<int:id>/delete/", views.venue_baja, name="venue_delete"),
     path("venue/<int:id>/edit/", views.venue_form, name="venue_edit"),
     path("venue/<int:id>/", views.venue_detail, name="venue_detail"),
+    #CATEGORIAS
+    path("categories/", views.category_list, name="category_list"),
+    path("categories/new/", views.category_form, name="category_new"),
+    path("categories/<int:id>/edit/", views.category_form, name="category_edit"),
+    path("categories/<int:id>/delete/", views.category_delete, name="category_delete"),
+    path('categories/<int:id>/events/', views.category_events, name='category_events'),
 ]

@@ -8,22 +8,15 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
 
     <title>{% block title %}EventHub{% endblock %}</title>
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-    >
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1"
-    />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" >
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
     <script>
         const csrfToken = document.querySelector('[name=csrf-token]').content;
     </script>
@@ -71,6 +64,9 @@
                                 </a>
                             </li>
                             {% endif %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'category_list' %}">Categorías</a>
+                            </li>
                         </ul>
                         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                             <li class="nav-item">
@@ -78,25 +74,41 @@
                             </li>
                             <li class="nav-item">
                                 {% if user.is_authenticated and user.is_organizer %}
-                                    <a class="nav-link" href="{% url 'reembolsos_eventos' %}">
-                                        Reembolsos
-                                    </a>
+                                    <a class="nav-link" href="{% url 'reembolsos_eventos' %}">Reembolsos</a>
+                                {% else %}
+                                    <a class="nav-link" href="{% url 'solicitar_reembolso' %}">Solicitar reembolso</a>
+                                
+                                    <!-- Desplegable para usuarios no organizadores -->
+                                    <!--<li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle" href="#" id="reembolsoDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Reembolsos
+                                        </a>
+                                        <ul class="dropdown-menu" aria-labelledby="reembolsoDropdown">
+                                            <li><a class="dropdown-item" href="{% url 'solicitar_reembolso' %}">Solicitar reembolso</a></li>
+                                            <li><a class="dropdown-item" href="{% url 'my_refund' %}">Mis reembolsos</a></li>
+                                        </ul>
+                                    </li>-->
+                                {% endif %}
+                            
+                            </li>
+                            <li class="nav-item">
+                                {% if user.is_authenticated and user.is_organizer %}
                                 {% else %}
                                     <!-- Desplegable para usuarios no organizadores -->
-                                    <div class="dropdown">
-                                        <button class="nav-link dropdown-toggle" type="button" id="reembolsoDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <!--<li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle" href="#" id="reembolsoDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                             Reembolsos
-                                        </button>
+                                        </a>
                                         <ul class="dropdown-menu" aria-labelledby="reembolsoDropdown">
-                                            <li>
-                                                <a class="dropdown-item" href="{% url 'solicitar_reembolso' %}">Solicitar reembolso</a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="{% url 'my_refund' %}">Mis reembolsos</a>
-                                            </li>
+                                            <li><a class="dropdown-item" href="{% url 'solicitar_reembolso' %}">Solicitar reembolso</a></li>
+                                            <li><a class="dropdown-item" href="{% url 'my_refund' %}">Mis reembolsos</a></li>
                                         </ul>
-                                    </div>
+                                    </li>-->
+                                    
+                                    <a class="nav-link" href="{% url 'my_refund' %}">Mis reembolsos</a>
+                         
                                 {% endif %}
+                            
                             </li>
                          </ul>
                     </div>
@@ -130,10 +142,6 @@
     {% block content %}
     {% endblock %}
 </body>
-<script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq"
-    crossorigin="anonymous"
-></script>
+
 
 </html>

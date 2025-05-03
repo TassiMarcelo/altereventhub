@@ -16,6 +16,10 @@ from .forms import RatingForm
 from django.contrib import messages
 from .models import Rating, Event
 from .models import Event, User
+from django.core.exceptions import ValidationError
+from .models import Event, User,Category
+from django.db.models import Count
+from django.contrib import messages
 
 from .models import Event, User, Venue
 
@@ -122,6 +126,9 @@ def event_form(request, id=None):
 
     if not user.is_organizer:
         return redirect("events")
+    
+    categories = Category.objects.filter(is_active=True)
+    selected_categories = []
 
     if request.method == "POST":
         title = request.POST.get("title")
@@ -129,6 +136,7 @@ def event_form(request, id=None):
         date = request.POST.get("date")
         time = request.POST.get("time")
         venue_id = request.POST.get("venueSelect")
+        category_ids = request.POST.getlist("categories")
 
         [year, month, day] = date.split("-")
         [hour, minutes] = time.split(":")
@@ -136,12 +144,14 @@ def event_form(request, id=None):
         scheduled_at = timezone.make_aware(
             datetime.datetime(int(year), int(month), int(day), int(hour), int(minutes))
         )
+
+        selected_categories = Category.objects.filter(id__in=category_ids)
         venue = get_object_or_404(Venue, pk=venue_id)
         if id is None:
-            Event.new(title, description,venue,scheduled_at, request.user)
+            Event.new(title, description,venue, scheduled_at, request.user, selected_categories)
         else:
             event = get_object_or_404(Event, pk=id)
-            event.update(title, description,venue, scheduled_at, request.user)
+            event.update(title, description,venue, scheduled_at, request.user, selected_categories)
 
         return redirect("events")
 
@@ -149,11 +159,12 @@ def event_form(request, id=None):
     if id is not None:
         event = get_object_or_404(Event, pk=id)
     venues = Venue.objects.filter(bl_baja=0)
+    selected_categories = event.categories.values_list("id", flat=True)
 
     return render(
         request,
         "app/event_form.html",
-        {"event": event,"venues":venues, "user_is_organizer": request.user.is_organizer},
+        {"event": event, "venues":venues,"user_is_organizer": request.user.is_organizer, "categories": categories, "selected_categories": selected_categories},
     )
 
 
@@ -596,3 +607,85 @@ def venue_detail(request, id=None):
         return redirect("venue")
     
     return render(request,"app/venue_detail.html", {"venue":venue,"user_is_organizer": request.user.is_organizer },)
+        
+
+@login_required
+def category_list(request):
+    categories = Category.objects.annotate(event_count=Count("events_categories__id"))
+    return render(request, "app/category_list.html", {"categories": categories})
+                  
+@login_required
+def category_form(request, id=None):
+    
+    if not request.user.is_organizer:
+        return redirect("category_list")
+    
+    category =None
+    if id:
+        category = get_object_or_404(Category, pk=id)
+
+    errors ={}
+
+    if request.method =="POST":
+        name = request.POST.get("name", "").strip()
+        description = request.POST.get("description","")
+        is_active = request.POST.get("is_active") == "on"
+
+        if not name:
+            errors["name"] = ["El nombre de la categoria es obligatorio"]
+        
+        if not description:
+            errors["description"] = ["La descripcion es obligatoria"]
+
+        if Category.objects.filter(name=name).exclude(pk=id).exists():  # Excluir la categoría actual si estamos editando
+            errors["name"] = ["Ya existe una categoría con el mismo nombre."]
+        
+        if not errors:
+
+            if category:
+                category.name = name
+                category.description = description
+                category. is_active = is_active
+            else:
+                category = Category(name=name, description=description, is_active=is_active)
+            
+            try:
+                 category.clean()
+                 category.save()
+                 return redirect("category_list")
+            
+            except ValidationError as e:
+        
+                errors = e.message_dict
+
+        return render(
+            request,
+            "app/category_form.html",
+            {"category": category, "errors": errors},
+         )
+
+    return render( request, "app/category_form.html", {"category": category, "errors":errors})
+
+@login_required
+def category_delete(request, id):
+    if not request.user.is_organizer:
+        return redirect("category_list")
+    
+    category = get_object_or_404(Category, pk=id)
+
+    if category.events.exists():
+        messages.error(request, "No se puede eliminar la categoría porque tiene eventos asociados.")
+        return redirect("category_list")
+    
+    if category.is_active:
+        messages.error(request, "No se puede eliminar una categoría activa.")
+        return redirect("category_list")
+
+    category.delete()
+    messages.success(request, "Categoría eliminada exitosamente.")
+    return redirect("category_list")
+
+def category_events(request, id):
+    category = get_object_or_404(Category, id=id)
+    events = category.events_categories.all()
+    return render(request, "app/category_events.html", {"category": category, "events": events})

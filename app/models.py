@@ -185,7 +185,7 @@ class Event(models.Model):
 
 [ok] Un usuario organizador puede eliminar tickets de sus eventos. (si el usuario es de tipo organizador, puede eliminar tickets)
 
-[pendiente] Un usuario REGULAR editar sus tickets. 
+[ok] Un usuario REGULAR editar sus tickets. 
 
 [pendiente] Más adelante se agregaron controles de tiempo. Por ejemplo, podrá editar y eliminar dentro de los 30 minutos de que la entrada fue comprada (ESTO NO ES OBLIGATORIO)
 '''

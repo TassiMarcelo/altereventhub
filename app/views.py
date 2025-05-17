@@ -686,3 +686,4 @@ def category_events(request, id):
     category = get_object_or_404(Category, id=id)
     events = category.events_categories.all()
     return render(request, "app/category_events.html", {"category": category, "events": events})
+        

@@ -36,7 +36,6 @@ class Category(models.Model):
     is_active = models.BooleanField(default=True)
     events = models.ManyToManyField("Event", related_name="category_events", blank=True)
     
-
     def clean(self):
         if not self.name.strip():
             raise ValidationError("El nombre de la categoria no puede estar vacio")

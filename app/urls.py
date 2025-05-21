@@ -7,6 +7,8 @@ urlpatterns = [
     path("accounts/register/", views.register, name="register"),
     path("accounts/logout/", LogoutView.as_view(), name="logout"),
     path("accounts/login/", views.login_view, name="login"),
+
+    #Eventos
     path("events/", views.events, name="events"),
     path("events/create/", views.event_form, name="event_form"),
     path("events/<int:id>/edit/", views.event_form, name="event_edit"),
@@ -20,6 +22,7 @@ urlpatterns = [
     path("categories/<int:id>/delete/", views.category_delete, name="category_delete"),
     path('categories/<int:id>/events/', views.category_events, name='category_events'),
 
+    #Tickets
     path("tickets", views.tickets, name="tickets"), # Ver tickets comprados siendo un cliente
     path("ticket/<int:id>/form/", views.ticket_form, name="ticket_form"), # El formulario de tarjeta de credito
     path("ticket/<str:ticket_code>/delete/", views.ticket_delete, name="ticket_delete"), # El formulario de tarjeta de credito

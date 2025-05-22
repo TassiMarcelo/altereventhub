@@ -1,6 +1,5 @@
 from django.contrib.auth.views import LogoutView
 from django.urls import path
-
 from . import views
 
 urlpatterns = [
@@ -14,6 +13,13 @@ urlpatterns = [
     path("events/<int:id>/", views.event_detail, name="event_detail"),
     path("events/<int:id>/delete/", views.event_delete, name="event_delete"),
 
+    #CATEGORIAS
+    path("categories/", views.category_list, name="category_list"),
+    path("categories/new/", views.category_form, name="category_new"),
+    path("categories/<int:id>/edit/", views.category_form, name="category_edit"),
+    path("categories/<int:id>/delete/", views.category_delete, name="category_delete"),
+    path('categories/<int:id>/events/', views.category_events, name='category_events'),
+
     path("tickets", views.tickets, name="tickets"), # Ver tickets comprados siendo un cliente
     path("ticket/<int:id>/form/", views.ticket_form, name="ticket_form"), # El formulario de tarjeta de credito
     path("ticket/<str:ticket_code>/delete/", views.ticket_delete, name="ticket_delete"), # El formulario de tarjeta de credito
@@ -23,8 +29,6 @@ urlpatterns = [
 
     path("ticket/<str:ticket_code>/form/edit", views.ticket_edit_form, name="ticket_edit_form"), # El POST para comprar tickets
 
-
-    
     path('events/<int:event_id>/comment/add/', views.add_comment, name='add_comment'),# ruta para comentario
     path('comments/<int:comment_id>/edit/', views.edit_comment, name='edit_comment'),
     path('comments/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
@@ -45,4 +49,5 @@ urlpatterns = [
     path("venue/<int:id>/delete/", views.venue_baja, name="venue_delete"),
     path("venue/<int:id>/edit/", views.venue_form, name="venue_edit"),
     path("venue/<int:id>/", views.venue_detail, name="venue_detail"),
+
 ]

@@ -123,8 +123,8 @@ class Event(models.Model):
         return self.tickets.filter(bl_baja=False)
 
     @classmethod
-    def new(cls, title, description,venue, scheduled_at, organizer):
-        errors = Event.validate(title, description,venue,scheduled_at)
+    def new(cls, title, description,venue, scheduled_at, organizer, categories=None):
+        errors = cls.validate(title, description,venue, scheduled_at, categories)
 
         if len(errors.keys()) > 0:
             return False, errors
@@ -146,8 +146,10 @@ class Event(models.Model):
         self.organizer = organizer or self.organizer
         self.venue = venue or self.venue
         self.save()
-
-
+        if categories is not None:
+            self.categories.set(categories)
+        return True
+        
 # Realizar la alta, baja y modificación. El formulario de creación y edición debe tener validaciones server-side.
 '''
 [ok] ticket_code es un valor autogenerado en el backend
@@ -158,7 +160,7 @@ class Event(models.Model):
 
 [ok] Un usuario organizador puede eliminar tickets de sus eventos. (si el usuario es de tipo organizador, puede eliminar tickets)
 
-[ok] Un usuario REGULAR editar sus tickets. 
+[ok] Un usuario REGULAR editar sus tickets.  
 
 [pendiente] Más adelante se agregaron controles de tiempo. Por ejemplo, podrá editar y eliminar dentro de los 30 minutos de que la entrada fue comprada (ESTO NO ES OBLIGATORIO)
 '''
@@ -311,3 +313,5 @@ class Rating(models.Model):
         self.bl_baja = True
         self.is_current = False
         self.save()
+
+   

@@ -5,17 +5,22 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.contrib import messages
-from .models import Comment, Event
+from .models import Comment
 from .forms import CommentForm
+from django.http import JsonResponse
 from django.db.models import Prefetch
-
-from .models import Event, User, Ticket, RefundRequest
+from .models import Ticket, RefundRequest
 from .forms import RatingForm
 from django.contrib import messages
-from .models import Rating, Event
-from .models import Event, User
+from .models import Rating
+from django.core.exceptions import ValidationError
+from .models import Event, User,Category
+from django.db.models import Count
+from .models import Venue
+from django.db import IntegrityError
+from django.db.transaction import atomic
+from .forms import RatingForm
 
-from .models import Event, User, Venue
 
 
 def register(request):
@@ -80,8 +85,6 @@ def events(request):
         {"events": events, "user_is_organizer": request.user.is_organizer},
     )
 
-from .forms import RatingForm
-
 @login_required
 def event_detail(request, id):
     event = get_object_or_404(Event, pk=id)
@@ -143,10 +146,14 @@ def event_form(request, id=None):
 
         return redirect("events")
 
-    event = {}
+    event = None
     if id is not None:
         event = get_object_or_404(Event, pk=id)
     venues = Venue.objects.filter(bl_baja=0)
+
+    selected_categories = []
+    if event:
+        selected_categories = event.categories.values_list("id", flat=True)
 
     return render(
         request,
@@ -341,8 +348,76 @@ def solicitar_reembolso(request):
 
 
     return render(request, "request_form.html")
-from django.db import IntegrityError
-from django.db.transaction import atomic
+
+@login_required
+def my_refund(request):
+    reembolsos_usuario = RefundRequest.objects.filter(requester=request.user)
+    return render(request, "my_refund.html", {
+        "reembolsos": reembolsos_usuario
+    })
+
+@login_required
+def editar_reembolso(request, id):
+    reembolso = get_object_or_404(RefundRequest, id=id, requester=request.user)
+
+    if request.method == "POST":
+        print("Datos recibidos:")
+        print(f"Motivo: {request.POST.get('reason')}")
+        print(f"Detalles: {request.POST.get('details')}")
+        
+        reembolso.reason = request.POST.get("reason")
+        reembolso.details = request.POST.get("details")
+        reembolso.save()
+        messages.success(request, "Reembolso actualizado correctamente.")
+        return redirect("my_refund")
+
+    return render(request, "refund/edit_refund.html", {"reembolso": reembolso})
+
+@login_required
+def eliminar_reembolso(request, id):
+    reembolso = get_object_or_404(RefundRequest, id=id, requester=request.user)
+
+    if request.method == "POST":
+        reembolso.delete()
+        messages.success(request, "Reembolso eliminado correctamente.")
+        return redirect("my_refund")
+
+    return HttpResponseForbidden("Método no permitido.") 
+
+ # Filtrar las solicitudes de reembolso x eventos del organizador
+@login_required
+def reembolsos_eventos(request):
+    if not request.user.is_authenticated or not request.user.is_organizer:
+        return render(request, '403.html')
+    eventos_del_organizador = Event.objects.filter(organizer=request.user)
+    tickets = Ticket.objects.filter(event__in=eventos_del_organizador)
+    ticket_map = {str(ticket.ticket_code): ticket for ticket in tickets}
+    refunds = RefundRequest.objects.filter(ticket_code__in=ticket_map.keys())
+
+    for refund in refunds:
+        refund.ticket = ticket_map.get(refund.ticket_code)
+        refund.event = refund.ticket.event if refund.ticket else None
+    
+    return render(request, "reembolsos_eventos.html", {'refunds': refunds})    
+def aprobar_reembolso(request, refund_id):
+    refund = get_object_or_404(RefundRequest, id=refund_id)
+    if request.method == 'POST':
+        refund.approve()
+        return JsonResponse({
+            "status": "success",
+            "new_status": refund.get_status_display()
+        })
+    return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
+
+def rechazar_reembolso(request, refund_id):
+    refund = get_object_or_404(RefundRequest, id=refund_id)
+    if request.method == 'POST':
+        refund.reject()
+        return JsonResponse({
+            "status": "success",
+            "new_status": refund.get_status_display()
+        })
+    return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
 
 @login_required
 def create_rating(request, event_id):
@@ -523,3 +598,86 @@ def venue_detail(request, id=None):
         return redirect("venue")
     
     return render(request,"app/venue_detail.html", {"venue":venue,"user_is_organizer": request.user.is_organizer },)
+        
+
+@login_required
+def category_list(request):
+    categories = Category.objects.annotate(event_count=Count("events_categories__id"))
+    return render(request, "app/category_list.html", {"categories": categories})
+                  
+@login_required
+def category_form(request, id=None):
+    
+    if not request.user.is_organizer:
+        return redirect("category_list")
+    
+    category =None
+    if id:
+        category = get_object_or_404(Category, pk=id)
+
+    errors ={}
+
+    if request.method =="POST":
+        name = request.POST.get("name", "").strip()
+        description = request.POST.get("description","")
+        is_active = request.POST.get("is_active") == "on"
+
+        if not name:
+            errors["name"] = ["El nombre de la categoria es obligatorio"]
+        
+        if not description:
+            errors["description"] = ["La descripcion es obligatoria"]
+
+        if Category.objects.filter(name=name).exclude(pk=id).exists():  # Excluir la categoría actual si estamos editando
+            errors["name"] = ["Ya existe una categoría con el mismo nombre."]
+        
+        if not errors:
+
+            if category:
+                category.name = name
+                category.description = description
+                category. is_active = is_active
+            else:
+                category = Category(name=name, description=description, is_active=is_active)
+            
+            try:
+                 category.clean()
+                 category.save()
+                 return redirect("category_list")
+            
+            except ValidationError as e:
+        
+                errors = e.message_dict
+
+        return render(
+            request,
+            "app/category_form.html",
+            {"category": category, "errors": errors},
+         )
+
+    return render( request, "app/category_form.html", {"category": category, "errors":errors})
+
+@login_required
+def category_delete(request, id):
+    if not request.user.is_organizer:
+        return redirect("category_list")
+    
+    category = get_object_or_404(Category, pk=id)
+
+    if category.events.exists():
+        messages.error(request, "No se puede eliminar la categoría porque tiene eventos asociados.")
+        return redirect("category_list")
+    
+    if category.is_active:
+        messages.error(request, "No se puede eliminar una categoría activa.")
+        return redirect("category_list")
+
+    category.delete()
+    messages.success(request, "Categoría eliminada exitosamente.")
+    return redirect("category_list")
+
+def category_events(request, id):
+    category = get_object_or_404(Category, id=id)
+    events = category.events_categories.all()
+    return render(request, "app/category_events.html", {"category": category, "events": events})
+        

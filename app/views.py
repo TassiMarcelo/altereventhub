@@ -538,6 +538,53 @@ def venue_form(request, id=None):
         ciudad = request.POST.get("ciudad")
         capacidad = request.POST.get("capacidad")
         contacto= request.POST.get("contacto")
+        
+        #Guardo los datos enviados por el usuario para poder mostrarlos en caso de que no complete alguno de los campos
+        #1)En caso de que haya venido del create, solo guardo los datos que estaban en el formulario.
+        #2)En caso de que haya venido del update, guardo el id
+        if id is None:
+            venue_validate={
+                "name": nombre,
+                "address": direccion,
+                "city": ciudad,
+                "capacity": capacidad,
+                "contact": contacto,
+            }
+
+        else:
+            venue_validate={
+                "id":id,
+                "name": nombre,
+                "address": direccion,
+                "city": ciudad,
+                "capacity": capacidad,
+                "contact": contacto,
+            }
+             
+        #Verifico cada campo para que no sea nulo
+        errors = {}
+        if nombre == "":
+            errors["nombre"] = "Por favor ingrese un titulo"
+
+        if direccion == "":
+            errors["direccion"] = "Por favor ingrese una descripcion"
+        
+        if ciudad == "":
+            errors["ciudad"] = "Por favor ingrese una ciudad"
+            
+        if capacidad == "":
+            errors["capacidad"] = "Por favor ingrese la capacidad"
+            
+        if contacto == "":
+            errors["contacto"] = "Por favor ingrese un contacto"
+
+        #En caso de que haya errores, se reenvía el formulario con los mensajes correspondientes.
+        if errors:
+        # Renderizamos al form con errores y datos ingresados
+            return render(request, "app/venue_form.html", {"errors": errors,"venue": venue_validate})
+
+        
+        #Si no se pasa ningun id significa que esta creando. caso contrario se modifica la ubicacion seleccionada.
         if id is None:
             Venue.newVenue(nombre, direccion, ciudad,capacidad,contacto)
             messages.success(request, f'Se creo correctamente la ubicación "{nombre}".')

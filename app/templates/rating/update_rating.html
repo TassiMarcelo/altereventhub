@@ -5,35 +5,57 @@
     <div class="card shadow-sm">
         <div class="card-body">
             <h1 class="mb-3">Editando tu calificación para: {{ event.title }}</h1>
+
             <form method="post">
                 {% csrf_token %}
-                <input type="hidden" name="rating" id="ratingInput" value="{{ current_rating }}">
+                <input type="hidden" name="rating" id="ratingInput" value="{{ form.rating.value|default:0 }}">
 
                 <!-- Sistema de Estrellas -->
                 <div class="rating-stars mb-4">
                     {% for i in "12345" %}
                         <label data-value="{{ forloop.counter }}" class="star-label">
-                            <span class="star-icon {% if forloop.counter <= current_rating %}active{% endif %}">★</span>
+                            <span class="star-icon {% if forloop.counter <= form.rating.value|default:0 %}active{% endif %}">★</span>
                         </label>
                     {% endfor %}
                 </div>
 
+                {% if form.rating.errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.rating.errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Campo título -->
                 <div class="mb-3">
                     <label for="id_title" class="form-label fw-bold">Título*</label>
-                    <input type="text" name="title" id="id_title" class="form-control form-control-lg"
+                    <input type="text" required name="title" id="id_title"
+                           class="form-control form-control-lg {% if form.title.errors %}is-invalid{% endif %}"
                            value="{{ form.title.value|default:'' }}" required>
+                    {% for error in form.title.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
                 </div>
 
+                <!-- Campo texto -->
                 <div class="mb-3">
                     <label for="id_text" class="form-label fw-bold">Comentario (opcional)</label>
-                    <textarea name="text" id="id_text" class="form-control" rows="3">{{ form.text.value|default:'' }}</textarea>
+                    <textarea name="text" id="id_text"
+                              class="form-control {% if form.text.errors %}is-invalid{% endif %}" rows="3">{{ form.text.value|default:'' }}</textarea>
+                    {% for error in form.text.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
                 </div>
 
+                <!-- Botón actualizar -->
                 <div class="d-grid">
                     <button type="submit" class="btn btn-primary btn-lg">
                         <i class="bi bi-save me-2"></i>Actualizar
                     </button>
                 </div>
+
+                <!-- Botón cancelar -->
                 <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-secondary mt-3">
                     <i class="bi bi-x-circle me-2"></i>Cancelar
                 </a>
@@ -42,7 +64,7 @@
     </div>
 </div>
 
-<!-- Estilos -->
+<!-- Estilos estrellas -->
 <style>
     .rating-stars {
         display: flex;
@@ -67,20 +89,30 @@
     }
 </style>
 
-<!-- Scripts -->
+<!-- Script estrellas -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const currentRating = parseInt(document.getElementById('ratingInput').value);
-        document.querySelectorAll('.star-label').forEach(star => {
-            star.addEventListener('click', function() {
-                const value = this.getAttribute('data-value');
-                document.getElementById('ratingInput').value = value;
+        const ratingInput = document.getElementById('ratingInput');
+        const starLabels = document.querySelectorAll('.star-label');
+        const starIcons = document.querySelectorAll('.star-icon');
 
-                document.querySelectorAll('.star-icon').forEach((icon, index) => {
-                    icon.classList.toggle('active', index < value);
-                });
+        function updateStars(value) {
+            starIcons.forEach((icon, index) => {
+                icon.classList.toggle('active', index < value);
+            });
+        }
+
+        starLabels.forEach(label => {
+            label.addEventListener('click', function() {
+                const value = parseInt(this.dataset.value);
+                ratingInput.value = value;
+                updateStars(value);
             });
         });
+
+        // Inicialización con el valor actual
+        const currentRating = parseInt(ratingInput.value);
+        if (currentRating) updateStars(currentRating);
     });
 </script>
 {% endblock %}

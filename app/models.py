@@ -322,17 +322,46 @@ class Rating(models.Model):
 
     class Meta:
         constraints = [
-        models.UniqueConstraint(
-            fields=['user', 'event'],
-            condition=models.Q(is_current=True, bl_baja=False),
-            name='unique_active_rating_per_user_event'
-        )
-    ]
-    #Eliminacion logica
+            models.UniqueConstraint(
+                fields=['user', 'event'],
+                condition=models.Q(is_current=True, bl_baja=False),
+                name='unique_active_rating_per_user_event'
+            )
+        ]
+
+    def clean(self):
+        """Validación del modelo"""
+        errors = {}
+                
+        # Validación del rating (aunque ya tiene validators)
+        if self.rating not in range(1, 6):
+            errors['rating'] = 'La calificación debe estar entre 1 y 5'
+                
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def soft_delete(self):
-        """Marcar como eliminado lógicamente"""
         self.bl_baja = True
         self.is_current = False
         self.save()
+
+    @classmethod
+    def validate_new_rating(cls, user, event, title, rating, text=None):
+        
+        errors = {}            
+        # Validacion rating
+        try:
+            rating_int = int(rating)
+            if rating_int < 1 or rating_int > 5:
+                errors["rating"] = "La calificación debe ser entre 1 y 5"
+        except (ValueError, TypeError):
+            errors["rating"] = "La calificación debe ser un número válido"
+               
+            
+        return errors
 
    

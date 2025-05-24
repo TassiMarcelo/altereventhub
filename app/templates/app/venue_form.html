@@ -23,14 +23,14 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <label for="nombre" class="form-label">Nombre de la Ubicacion</label>
-                                    <input class="form-control" id="nombre"  type="text" value="{{venue.name}}" name="nombre" placeholder="Ej. Estadio Nacional"/>
+                                    <input class="form-control" id="nombre" required="" type="text" value="{{venue.name}}" name="nombre" placeholder="Ej. Estadio Nacional"/>
                                     {% if errors.nombre %}
                                         <div class="text-danger">{{ errors.nombre }}</div>
                                     {% endif %}
                                 </div>
                                 <div class="col-md-6">
                                     <label for="direccion" class="form-label">Direccion</label>
-                                    <input class="form-control" id="direccion"  type="text" value="{{venue.address}}" name="direccion" placeholder="Ej. Av Grecia 2001" />
+                                    <input class="form-control" id="direccion" required="" type="text" value="{{venue.address}}" name="direccion" placeholder="Ej. Av Grecia 2001" />
                                     {% if errors.direccion %}
                                         <div class="text-danger">{{ errors.direccion }}</div>
                                     {% endif %}
@@ -39,7 +39,7 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <label for="ciudad" class="form-label">Ciudad</label>
-                                    <input class="form-control" id="ciudad" type="text" value="{{venue.city}}" name="ciudad" placeholder="Ej. Chile" />
+                                    <input class="form-control" id="ciudad" required="" type="text" value="{{venue.city}}" name="ciudad" placeholder="Ej. Chile" />
                                     {% if errors.ciudad %}
                                         <div class="text-danger">{{ errors.ciudad }}</div>
                                     {% endif %}
@@ -47,7 +47,7 @@
 
                                 <div class="col-md-6">
                                     <label for="capacidad" class="form-label">Capacidad</label>
-                                    <input class="form-control" id="capacidad"  type="number" value="{{venue.capacity}}" name="capacidad" placeholder="Ej. 500" />
+                                    <input class="form-control" id="capacidad" required="" type="number" value="{{venue.capacity}}" name="capacidad" placeholder="Ej. 500" />
                                     {% if errors.capacidad %}
                                         <div class="text-danger">{{ errors.capacidad }}</div>
                                     {% endif %}
@@ -57,7 +57,7 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <label for="contacto" class="form-label">Contacto</label>
-                                    <textarea rows="4" cols="50" style="resize: both;" class="form-control" id="contacto"  name="contacto" placeholder="Detalle la información del contacto">{{ venue.contact }}</textarea>
+                                    <textarea rows="4" cols="50" style="resize: both;" class="form-control" id="contacto" required="" name="contacto" placeholder="Detalle la información del contacto">{{ venue.contact }}</textarea>
                                     {% if errors.contacto %}
                                         <div class="text-danger">{{ errors.contacto }}</div>
                                     {% endif %}

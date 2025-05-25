@@ -127,12 +127,13 @@ def event_form(request, id=None):
     categories = Category.objects.filter(is_active=True)
     selected_categories = []
 
-    if request.method == "POST":
+    if request.method == "POST":  
         title = request.POST.get("title")
         description = request.POST.get("description")
         date = request.POST.get("date")
         time = request.POST.get("time")
         venue_id = request.POST.get("venueSelect")
+        status=request.POST.get("status")
         category_ids = request.POST.getlist("categories")
 
         [year, month, day] = date.split("-")
@@ -148,7 +149,7 @@ def event_form(request, id=None):
             Event.new(title, description,venue, scheduled_at, request.user, selected_categories)
         else:
             event = get_object_or_404(Event, pk=id)
-            event.update(title, description,venue, scheduled_at, request.user, selected_categories)
+            event.update(title, description,venue,status, scheduled_at, request.user, selected_categories)
 
         return redirect("events")
 

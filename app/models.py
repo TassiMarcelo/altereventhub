@@ -89,11 +89,24 @@ class Venue(models.Model):
 
 
 class Event(models.Model):
+    class Status(models.TextChoices):
+        ACTIVO = 'Activo', 'Activo'
+        CANCELADO = 'Cancelado', 'Cancelado'
+        REPROGRAMADO = 'Reprogramado', 'Reprogramado'
+        AGOTADO = 'Agotado', 'Agotado'
+        FINALIZADO = 'Finalizado', 'Finalizado'
+
+
     title = models.CharField(max_length=200)
     description = models.TextField()
     scheduled_at = models.DateTimeField()
     organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_events")
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name="events")
+    status = models.CharField(
+    max_length=20,
+    choices=Status.choices,
+    default=Status.ACTIVO
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     categories = models.ManyToManyField(Category, related_name="events_categories", blank=True)
@@ -102,7 +115,7 @@ class Event(models.Model):
         return self.title
 
     @classmethod
-    def validate(cls, title, description,venue, scheduled_at, categories=None):
+    def validate(cls, title, description,venue,scheduled_at, categories=None):
         errors = {}
 
         if title == "":
@@ -142,12 +155,13 @@ class Event(models.Model):
             event.categories.set(categories)
         return True, None
 
-    def update(self, title, description,venue, scheduled_at, organizer, categories=None):
+    def update(self, title, description,venue,status, scheduled_at, organizer, categories=None):
         self.title = title or self.title
         self.description = description or self.description
         self.scheduled_at = scheduled_at or self.scheduled_at
         self.organizer = organizer or self.organizer
         self.venue = venue or self.venue
+        self.status= status or self.status
         self.save()
         if categories is not None:
             self.categories.set(categories)

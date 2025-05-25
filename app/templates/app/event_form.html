@@ -38,7 +38,19 @@
                                     {% endfor %}
                                   </select>
                               </div>
-
+                                {% if event.id %}    
+                                    <div class="form-group">
+                                    <label for="statusSelect">Estados</label>
+                                    <select name="status" id="statusSelect" class="form-control">                                        
+                                        <option value="Activo" {% if event.status == "Activo" %}selected{% endif %}>Activo</option>
+                                        <option value="Cancelado" {% if event.status == "Cancelado" %}selected{% endif %}>Cancelado</option>
+                                        <option value="Reprogramado" {% if event.status == "Reprogramado" %}selected{% endif %}>Reprogramado</option>
+                                        <option value="Agotado" {% if event.status == "Agotado" %}selected{% endif %}>Agotado</option>
+                                        <option value="Finalizado" {% if event.status == "Finalizado" %}selected{% endif %}>Finalizado</option>
+                                    </select>
+                                    </div> 
+                                {% endif %}
+                              
                             <div>
                                 <label for="description" class="form-label">Descripción</label>
                                 <textarea

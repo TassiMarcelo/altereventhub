@@ -2,6 +2,7 @@ import datetime
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.contrib import messages
@@ -190,15 +191,48 @@ def ticket_delete(request,ticket_code):
     return redirect("events")
 
 
-def ticket_edit(request,ticket_code):
-    if(request.method == "POST"):
+@login_required
+def ticket_edit(request, ticket_code):
+    if request.method == "POST":
         quantity = request.POST.get("quantity")
         type = request.POST.get("type")
-        ticket = Ticket.objects.filter(ticket_code = ticket_code, user=request.user).first()
-        if ticket:
-            ticket.update(quantity=quantity, type=type)
-            messages.success(request, f"¡Exito! ticket editado correctamente")
-            return render(request, "app/ticket_edit_form.html",{"ticket":ticket})
+        
+        try:
+            quantity = int(quantity)
+            if quantity <= 0:
+                raise ValueError
+        except ValueError:
+            messages.error(request, "La cantidad debe ser un número entero positivo.")
+            return redirect("ticket_edit_form", ticket_code=ticket_code)
+
+        if type not in Ticket.Type.values:
+            messages.error(request, "El tipo de ticket no es válido.")
+            return redirect("ticket_edit_form", ticket_code=ticket_code)
+
+        ticket = Ticket.objects.filter(ticket_code=ticket_code, user=request.user).first()
+        if not ticket:
+            messages.error(request, "Ticket no encontrado.")
+            return redirect("tickets")
+
+        # Validar límite de 4 entradas por evento
+        total_user_tickets = Ticket.objects.filter(
+            user=request.user,
+            event=ticket.event,
+            bl_baja=0
+        ).exclude(id=ticket.id).aggregate(Sum("quantity"))["quantity__sum"] or 0
+        
+        if total_user_tickets + quantity > 4:
+            messages.error(request, f"No puedes tener más de 4 entradas por evento.")
+            return redirect("ticket_edit_form", ticket_code=ticket_code)
+
+        # Actualizar el ticket
+        ticket.quantity = quantity
+        ticket.type = type
+        ticket.save()
+        messages.success(request, "Ticket editado correctamente")
+        return redirect("tickets")
+
+    return redirect("tickets")
 
 
 def ticket_edit_form(request,ticket_code):
@@ -206,46 +240,61 @@ def ticket_edit_form(request,ticket_code):
     return render(request, "app/ticket_edit_form.html",{"ticket":ticket})
 
 
-
 @login_required
 def ticket_buy(request, eventId):
     user = request.user
     if request.method == "POST":
         quantity = request.POST.get("quantity")
-        type = request.POST.get("type")
+        tipo = request.POST.get("type")
 
-        # Chequear que esten todos los campos llenos
-        if not all([quantity, type]):
-            # Algún campo faltó
-            print("Todos los campos son obligatorios.")
+        # Validaciones básicas
+        if not all([quantity, tipo]):
+            messages.error(request, "Todos los campos son obligatorios.")
+            return redirect('ticket_form', id=eventId)
 
-        # Chequear que quantity sea un entero positivo
-        valError = "La cantidad debe ser un número entero positivo."
         try:
-            if int(quantity) <= 0:
-                raise ValueError(valError)
+            quantity = int(quantity)
+            if quantity <= 0:
+                raise ValueError
         except ValueError:
-            print(valError)
+            messages.error(request, "La cantidad debe ser un número entero positivo.")
+            return redirect('ticket_form', id=eventId)
 
-        # Chequear que el tipo de ticket sea valido
-        if type not in Ticket.Type.values:
-            print("El tipo de ticket no es válido.")
+        if tipo not in Ticket.Type.values:
+            messages.error(request, "El tipo de ticket no es válido.")
+            return redirect('ticket_form', id=eventId)
 
         event = get_object_or_404(Event, pk=eventId)
 
+        # Total de tickets comprados por el usuario
+        total_user_tickets = Ticket.objects.filter(
+            user=user, event=event, bl_baja=0
+        ).aggregate(total=Sum("quantity"))["total"] or 0
+
+        # Cantidad previa de tickets antes de la compra
+        print(f"Usuario {user.username} ya tiene {total_user_tickets} tickets para evento {event.title}. Intentando comprar {quantity} más.")
+
+        if total_user_tickets + quantity > 4:
+            messages.error(request, f"No puedes comprar más de 4 entradas por evento.")
+            print(f"Compra rechazada: el usuario quiere comprar {total_user_tickets + quantity}, que supera el límite.")
+            return redirect('ticket_form', id=eventId)
+
+        # Crear ticket
+        print("Creando ticket...")
         ticket = Ticket.new(
             buy_date=timezone.now(),
             quantity=quantity,
-            type=type,
+            type=tipo,
             event=event,
             user=user
         )
-
-        print(f"Ticket comprado! Codigo: {str(ticket.ticket_code)}")
-        # Agregar un mensaje con el ticket_code
         messages.success(request, f"¡Compra exitosa! Código del ticket: {ticket.ticket_code}")
-    
-    return redirect('ticket_form', id=eventId)  # redirigimos al mismo formulario
+        print(f"Ticket comprado! Codigo: {str(ticket.ticket_code)}")
+
+        return redirect('ticket_form', id=eventId)
+
+    messages.error(request, "Método no permitido.")
+    return redirect('ticket_form', id=eventId)
         
 
 def ticket_form(request, id):

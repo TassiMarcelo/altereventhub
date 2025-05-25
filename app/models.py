@@ -312,10 +312,10 @@ class RefundRequest(models.Model):
 
 class Rating(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    event = models.ForeignKey('Event', on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     text = models.TextField(blank=True)
-    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    rating = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     bl_baja = models.BooleanField(default=False)
     is_current = models.BooleanField(default=True)
@@ -329,42 +329,24 @@ class Rating(models.Model):
             )
         ]
 
-    def clean(self):
-        """Validación completa del modelo"""
-        errors = {}
-        
-        # Validación del rating
-        if self.rating not in range(1, 6):
-            errors['rating'] = 'La calificación debe estar entre 1 y 5'
-        
-        if errors:
-            raise ValidationError(errors)
-
-    def save(self, *args, **kwargs):
-        """Guarda solo si pasa todas las validaciones"""
-        self.full_clean()
-        super().save(*args, **kwargs)
+    @classmethod
+    def newRating(cls, user, event, title, rating, text=None):
+        try:
+            cls.objects.create(
+                user=user,
+                event=event,
+                title=title,
+                rating=rating,
+                text=text or ''
+            )
+            return True, None
+        except Exception as e:
+            return False, {'db_error': str(e)}
 
     def soft_delete(self):
-        """Eliminación lógica con validación"""
-        if self.bl_baja:
-            raise ValidationError("Este rating ya está marcado como eliminado")
+        """Eliminación lógica sin validaciones"""
         self.bl_baja = True
         self.is_current = False
         self.save()
-
-    @classmethod
-    def validate_new_rating(cls, user, event, title, rating, text=None):
-        """Validación preliminar antes de crear un rating"""
-        errors = {}
-        
-        try:
-            rating = int(rating)
-            if rating not in range(1, 6):
-                errors["rating"] = "La calificación debe ser entre 1 y 5"
-        except (ValueError, TypeError):
-            errors["rating"] = "La calificación debe ser un número entero válido"
-            
-        return errors
 
    

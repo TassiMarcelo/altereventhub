@@ -431,9 +431,10 @@ def rechazar_reembolso(request, refund_id):
 @login_required
 def create_rating(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
+    user = request.user
 
-    # Validar que no exista una calificación activa para este usuario y evento
-    if Rating.objects.filter(user=request.user, event=event, is_current=True, bl_baja=False).exists():
+    # Verificar si ya existe rating activo
+    if Rating.objects.filter(user=user, event=event, is_current=True, bl_baja=False).exists():
         messages.error(request, "Ya has calificado este evento")
         return redirect('event_detail', id=event_id)
 
@@ -446,46 +447,56 @@ def create_rating(request, event_id):
             "title": title,
             "text": text,
             "rating": rating_value,
+            "event": event
         }
 
-        # Validaciones del modelo
         errors = {}
 
+        # Validación de título
         if not title:
             errors["title"] = "Por favor ingrese un título"
+        elif len(title) < 3:
+            errors["title"] = "El título debe tener al menos 3 caracteres"
 
-        errors.update(Rating.validate_new_rating(request.user, event, title, rating_value, text))
-
+        # Validación de rating
+        try:
+            rating_int = int(rating_value)
+            if rating_int < 1 or rating_int > 5:
+                errors["rating"] = "La calificación debe estar entre 1 y 5"
+        except (ValueError, TypeError):
+            errors["rating"] = "La calificación debe ser un número válido"
 
         if errors:
             for field, error_msg in errors.items():
                 messages.error(request, error_msg)
-            return render(request, "rating/create_rating.html", {"errors": errors, "rating": rating_data, "event": event})
+            return render(request, "rating/create_rating.html", {
+                "errors": errors,
+                "rating": rating_data,
+                "event": event
+            })
 
-        # Verificar si cumple validaciones
-        rating = Rating(
-            user=request.user,
-            event=event,
-            title=title,
-            text=text,
-            rating=int(rating_value),
-            is_current=True,
-            bl_baja=False,
-        )
-
+        # Crear el rating
         try:
-            rating.full_clean()
-            rating.save()
+            Rating.objects.create(
+                user=user,
+                event=event,
+                title=title,
+                text=text,
+                rating=rating_int,
+                is_current=True,
+                bl_baja=False
+            )
             messages.success(request, "¡Calificación guardada correctamente!")
             return redirect('event_detail', id=event.id)
-        except ValidationError as e:
-            for field, errors_list in e.message_dict.items():
-                for error in errors_list:
-                    messages.error(request, f"{field}: {error}")
-            return render(request, "rating/create_rating.html", {"rating": rating_data, "event": event})
+            
+        except Exception as e:
+            messages.error(request, f"Error al guardar: {str(e)}")
+            return render(request, "rating/create_rating.html", {
+                "rating": rating_data,
+                "event": event
+            })
 
-    else:
-        return render(request, "rating/create_rating.html", {"event": event})
+    return render(request, "rating/create_rating.html", {"event": event})
 
 
 @login_required
@@ -497,25 +508,26 @@ def update_rating(request, event_id, rating_id):
         form = RatingForm(request.POST, instance=rating)
         if form.is_valid():
             try:
-                form.instance.full_clean()
+                # Guardar el formulario
                 form.save()
-                messages.success(request, "Calificación actualizada correctamente")
-                return redirect("event_detail", id=event.id)
-            except ValidationError as e:
-                for field, errors in form.errors.items():
-                    for error in errors:
-                        messages.error(request, f"{field}: {error}")
+                messages.success(request, "¡Calificación actualizada correctamente!")
+                return redirect('event_detail', id=event.id)
+                
+            except Exception as e:
+                messages.error(request, f"Error al guardar: {str(e)}")
         else:
+            # Mostrar errores de validación
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"{field}: {error}")
     else:
+        # Inicializar formulario
         form = RatingForm(instance=rating)
 
     return render(request, "rating/update_rating.html", {
-        "form": form,
-        "event": event,
-        "rating": rating,
+        'form': form,
+        'event': event,
+        'rating': rating
     })
 
 

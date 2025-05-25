@@ -330,37 +330,40 @@ class Rating(models.Model):
         ]
 
     def clean(self):
-        """Validación del modelo"""
+        """Validación completa del modelo"""
         errors = {}
-                
-        # Validación del rating (aunque ya tiene validators)
+        
+        # Validación del rating
         if self.rating not in range(1, 6):
             errors['rating'] = 'La calificación debe estar entre 1 y 5'
-                
+        
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
+        """Guarda solo si pasa todas las validaciones"""
         self.full_clean()
         super().save(*args, **kwargs)
 
     def soft_delete(self):
+        """Eliminación lógica con validación"""
+        if self.bl_baja:
+            raise ValidationError("Este rating ya está marcado como eliminado")
         self.bl_baja = True
         self.is_current = False
         self.save()
 
     @classmethod
     def validate_new_rating(cls, user, event, title, rating, text=None):
+        """Validación preliminar antes de crear un rating"""
+        errors = {}
         
-        errors = {}            
-        # Validacion rating
         try:
-            rating_int = int(rating)
-            if rating_int < 1 or rating_int > 5:
+            rating = int(rating)
+            if rating not in range(1, 6):
                 errors["rating"] = "La calificación debe ser entre 1 y 5"
         except (ValueError, TypeError):
-            errors["rating"] = "La calificación debe ser un número válido"
-               
+            errors["rating"] = "La calificación debe ser un número entero válido"
             
         return errors
 

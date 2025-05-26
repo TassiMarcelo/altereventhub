@@ -27,7 +27,7 @@ class TicketLogicTest(TestCase):
         self.assertLessEqual(total_quantity, 4)
         print("✅ test_usuario_hasta_4_tickets pasó correctamente")
 
-    def prueba_limite_4_tickets(self):
+    def test_limite_4_tickets(self):
         Ticket.objects.create(user=self.user, event=self.event, quantity=3, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
         Ticket.objects.create(user=self.user, event=self.event, quantity=1, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
 
@@ -38,7 +38,7 @@ class TicketLogicTest(TestCase):
         else:
             self.fail("ValidationError no fue lanzado al exceder el límite de tickets")
 
-    def prueba_editar_dentro_del_limite(self):
+    def test_editar_dentro_del_limite(self):
         t1 = Ticket.objects.create(user=self.user, event=self.event, quantity=2, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
         t1.quantity = 3
         t1.save()
@@ -47,7 +47,7 @@ class TicketLogicTest(TestCase):
         self.assertLessEqual(total_quantity, 4)
         print("✅ test_edit_ticket_within_limit pasó correctamente")
 
-    def prueba_editar_superando_limite(self):
+    def test_editar_superando_limite(self):
         t1 = Ticket.objects.create(user=self.user, event=self.event, quantity=2, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
         t2 = Ticket.objects.create(user=self.user, event=self.event, quantity=2, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
 

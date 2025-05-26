@@ -2,6 +2,7 @@ import datetime
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.contrib import messages
@@ -19,9 +20,11 @@ from django.db.models import Count
 from .models import Venue
 from django.db import IntegrityError
 from django.db.transaction import atomic
+import logging
 from .forms import RatingForm
+from django.db.models import Avg, Count
 
-
+logger = logging.getLogger(__name__)
 
 def register(request):
     if request.method == "POST":
@@ -88,17 +91,26 @@ def events(request):
 @login_required
 def event_detail(request, id):
     event = get_object_or_404(Event, pk=id)
-    #Busca los ratings activos
+
+    # Busca los ratings activos
     visible_ratings = event.rating_set.filter(bl_baja=False, is_current=True)
-    
+
+    # Promedio y cantidad de ratings
+    rating_stats = visible_ratings.aggregate(
+        promedio=Avg('rating'),
+        cantidad=Count('id')
+    )
+
     user_rating = None
     if request.user.is_authenticated:
         user_rating = Rating.objects.filter(user=request.user, event=event, is_current=True, bl_baja=False).first()
-    
+
     return render(request, "app/event_detail.html", {
         "event": event,
         "ratings": visible_ratings,
-        "user_rating": user_rating
+        "user_rating": user_rating,
+        "avg_rating": rating_stats["promedio"],
+        "rating_count": rating_stats["cantidad"]
     })
 
 
@@ -190,15 +202,48 @@ def ticket_delete(request,ticket_code):
     return redirect("events")
 
 
-def ticket_edit(request,ticket_code):
-    if(request.method == "POST"):
+@login_required
+def ticket_edit(request, ticket_code):
+    if request.method == "POST":
         quantity = request.POST.get("quantity")
         type = request.POST.get("type")
-        ticket = Ticket.objects.filter(ticket_code = ticket_code, user=request.user).first()
-        if ticket:
-            ticket.update(quantity=quantity, type=type)
-            messages.success(request, f"¡Exito! ticket editado correctamente")
-            return render(request, "app/ticket_edit_form.html",{"ticket":ticket})
+        
+        try:
+            quantity = int(quantity)
+            if quantity <= 0:
+                raise ValueError
+        except ValueError:
+            messages.error(request, "La cantidad debe ser un número entero positivo.")
+            return redirect("ticket_edit_form", ticket_code=ticket_code)
+
+        if type not in Ticket.Type.values:
+            messages.error(request, "El tipo de ticket no es válido.")
+            return redirect("ticket_edit_form", ticket_code=ticket_code)
+
+        ticket = Ticket.objects.filter(ticket_code=ticket_code, user=request.user).first()
+        if not ticket:
+            messages.error(request, "Ticket no encontrado.")
+            return redirect("tickets")
+
+        # Validar límite de 4 entradas por evento
+        total_user_tickets = Ticket.objects.filter(
+            user=request.user,
+            event=ticket.event,
+            bl_baja=0
+        ).exclude(id=ticket.id).aggregate(Sum("quantity"))["quantity__sum"] or 0
+        
+        if total_user_tickets + quantity > 4:
+            messages.error(request, f"No puedes tener más de 4 entradas por evento.")
+            return redirect("ticket_edit_form", ticket_code=ticket_code)
+
+        # Actualizar el ticket
+        ticket.quantity = quantity
+        ticket.type = type
+        ticket.save()
+        messages.success(request, "Ticket editado correctamente")
+        return redirect("tickets")
+
+    return redirect("tickets")
 
 
 def ticket_edit_form(request,ticket_code):
@@ -206,46 +251,61 @@ def ticket_edit_form(request,ticket_code):
     return render(request, "app/ticket_edit_form.html",{"ticket":ticket})
 
 
-
 @login_required
 def ticket_buy(request, eventId):
     user = request.user
     if request.method == "POST":
         quantity = request.POST.get("quantity")
-        type = request.POST.get("type")
+        tipo = request.POST.get("type")
 
-        # Chequear que esten todos los campos llenos
-        if not all([quantity, type]):
-            # Algún campo faltó
-            print("Todos los campos son obligatorios.")
+        # Validaciones básicas
+        if not all([quantity, tipo]):
+            messages.error(request, "Todos los campos son obligatorios.")
+            return redirect('ticket_form', id=eventId)
 
-        # Chequear que quantity sea un entero positivo
-        valError = "La cantidad debe ser un número entero positivo."
         try:
-            if int(quantity) <= 0:
-                raise ValueError(valError)
+            quantity = int(quantity)
+            if quantity <= 0:
+                raise ValueError
         except ValueError:
-            print(valError)
+            messages.error(request, "La cantidad debe ser un número entero positivo.")
+            return redirect('ticket_form', id=eventId)
 
-        # Chequear que el tipo de ticket sea valido
-        if type not in Ticket.Type.values:
-            print("El tipo de ticket no es válido.")
+        if tipo not in Ticket.Type.values:
+            messages.error(request, "El tipo de ticket no es válido.")
+            return redirect('ticket_form', id=eventId)
 
         event = get_object_or_404(Event, pk=eventId)
 
+        # Total de tickets comprados por el usuario
+        total_user_tickets = Ticket.objects.filter(
+            user=user, event=event, bl_baja=0
+        ).aggregate(total=Sum("quantity"))["total"] or 0
+
+        # Cantidad previa de tickets antes de la compra
+        print(f"Usuario {user.username} ya tiene {total_user_tickets} tickets para evento {event.title}. Intentando comprar {quantity} más.")
+
+        if total_user_tickets + quantity > 4:
+            messages.error(request, f"No puedes comprar más de 4 entradas por evento.")
+            print(f"Compra rechazada: el usuario quiere comprar {total_user_tickets + quantity}, que supera el límite.")
+            return redirect('ticket_form', id=eventId)
+
+        # Crear ticket
+        print("Creando ticket...")
         ticket = Ticket.new(
             buy_date=timezone.now(),
             quantity=quantity,
-            type=type,
+            type=tipo,
             event=event,
             user=user
         )
-
-        print(f"Ticket comprado! Codigo: {str(ticket.ticket_code)}")
-        # Agregar un mensaje con el ticket_code
         messages.success(request, f"¡Compra exitosa! Código del ticket: {ticket.ticket_code}")
-    
-    return redirect('ticket_form', id=eventId)  # redirigimos al mismo formulario
+        print(f"Ticket comprado! Codigo: {str(ticket.ticket_code)}")
+
+        return redirect('ticket_form', id=eventId)
+
+    messages.error(request, "Método no permitido.")
+    return redirect('ticket_form', id=eventId)
         
 
 def ticket_form(request, id):
@@ -268,10 +328,11 @@ def add_comment(request, event_id):
             comment.event = event
             comment.save()
             messages.success(request, '¡Comentario publicado!')
-            return redirect('event_detail', id=event.id)
-    else:
-        form = CommentForm()
-    return render(request, 'comments/add_comment.html', {'form': form, 'event': event})
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error en {field}: {error}")
+    return redirect('event_detail', id=event.id)
 
 @login_required
 def edit_comment(request, comment_id):
@@ -426,75 +487,108 @@ def rechazar_reembolso(request, refund_id):
         })
     return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
 
+
+
 @login_required
 def create_rating(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
-    
+    user = request.user
+
+    # Verificar si ya existe rating activo
+    if Rating.objects.filter(user=user, event=event, is_current=True, bl_baja=False).exists():
+        messages.error(request, "Ya has calificado este evento")
+        return redirect('event_detail', id=event_id)
+
     if request.method == "POST":
-        form = RatingForm(request.POST)
-        rating_value = request.POST.get("rating", "0")
-        
-        if form.is_valid() and 1 <= int(rating_value) <= 5:
-            # Desactiva los ratings del usuario
-            Rating.objects.filter(
-                event=event,
-                user=request.user,
-                is_current=True
-            ).update(is_current=False)
-            
-            # Crear nueva calificación
+        title = request.POST.get("title", "").strip()
+        text = request.POST.get("text", "").strip()
+        rating_value = request.POST.get("rating")
+
+        rating_data = {
+            "title": title,
+            "text": text,
+            "rating": rating_value,
+            "event": event
+        }
+
+        errors = {}
+
+        # Validación de título
+        if not title:
+            errors["title"] = "Por favor ingrese un título"
+
+        # Validación de rating
+        try:
+            rating_int = int(rating_value)
+            if rating_int < 1 or rating_int > 5:
+                errors["rating"] = "La calificación debe estar entre 1 y 5"
+        except (ValueError, TypeError):
+            errors["rating"] = "La calificación debe ser un número válido"
+
+        if errors:
+            for field, error_msg in errors.items():
+                messages.error(request, error_msg)
+            return render(request, "rating/create_rating.html", {
+                "errors": errors,
+                "rating": rating_data,
+                "event": event
+            })
+
+        # Crear el rating
+        try:
             Rating.objects.create(
+                user=user,
                 event=event,
-                user=request.user,
-                title=form.cleaned_data['title'],
-                text=form.cleaned_data['text'],
-                rating=int(rating_value),
+                title=title,
+                text=text,
+                rating=rating_int,
                 is_current=True,
                 bl_baja=False
             )
-            messages.success(request, "Calificación guardada correctamente")
-            return redirect("event_detail", id=event.id)
-        else:
-            messages.error(request, "Error en el formulario. Verifica los datos.")
-    
-    # Muestra formulario
-    form = RatingForm()
-    return render(request, "app/create_rating.html", {
-        "form": form,
-        "event": event
-    })
+            messages.success(request, "¡Calificación guardada correctamente!")
+            return redirect('event_detail', id=event.id)
+            
+        except Exception as e:
+            messages.error(request, f"Error al guardar: {str(e)}")
+            return render(request, "rating/create_rating.html", {
+                "rating": rating_data,
+                "event": event
+            })
+
+    return render(request, "rating/create_rating.html", {"event": event})
 
 
 @login_required
 def update_rating(request, event_id, rating_id):
     event = get_object_or_404(Event, pk=event_id)
-    rating = get_object_or_404(Rating, pk=rating_id, user=request.user)
+    rating = get_object_or_404(Rating, pk=rating_id, user=request.user, event=event)
 
     if request.method == "POST":
         form = RatingForm(request.POST, instance=rating)
-        rating_value = request.POST.get("rating")
-
-        try:
-            rating_value = int(rating_value)
-            if form.is_valid() and 1 <= rating_value <= 5:
-                form.instance.rating = rating_value  # Asignamos el valor al modelo
+        if form.is_valid():
+            try:
+                # Guardar el formulario
                 form.save()
-                messages.success(request, "Calificación actualizada correctamente")
-                return redirect("event_detail", id=event.id)
-            else:
-                messages.error(request, "La calificación debe estar entre 1 y 5 estrellas.")
-        except (TypeError, ValueError):
-            messages.error(request, "Por favor seleccioná una cantidad de estrellas.")
-
+                messages.success(request, "¡Calificación actualizada correctamente!")
+                return redirect('event_detail', id=event.id)
+                
+            except Exception as e:
+                messages.error(request, f"Error al guardar: {str(e)}")
+        else:
+            # Mostrar errores de validación
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     else:
+        # Inicializar formulario
         form = RatingForm(instance=rating)
 
     return render(request, "rating/update_rating.html", {
-        "form": form,
-        "event": event,
-        "rating": rating,
-        "current_rating": rating.rating  # para inicializar las estrellas en el HTML
+        'form': form,
+        'event': event,
+        'rating': rating
     })
+
 
 @login_required
 def list_ratings(request, event_id):
@@ -502,20 +596,27 @@ def list_ratings(request, event_id):
     ratings = event.rating_set.filter(bl_baja=False).order_by('-created_at')
     user_rating = ratings.filter(user=request.user).first()
     
-    return render(request, "app/list_ratings.html", {
+    return render(request, "rating/list_ratings.html", {
         "event": event,
         "ratings": ratings,
         "user_rating": user_rating
     })
+
+
 @login_required
 def delete_rating(request, event_id, rating_id):
     rating = get_object_or_404(Rating, id=rating_id, event_id=event_id)
 
-    if request.user == rating.user or request.user == rating.event.organizer:
-        rating.soft_delete()  #Manejo de la baja logica
-        messages.success(request, "Calificación eliminada correctamente.")
-    else:
-        messages.error(request, "No tienes permiso para eliminar esta calificación.")
+    if request.user != rating.user and request.user != rating.event.organizer:
+        messages.error(request, "No tienes permiso para realizar esta acción")
+        return redirect('event_detail', id=event_id)
+
+    try:
+        rating.soft_delete()
+        messages.success(request, "Calificación eliminada correctamente")
+    except Exception as e:
+        logger.error(f"Error deleting rating: {str(e)}")
+        messages.error(request, "Ocurrió un error al eliminar la calificación")
 
     return redirect('event_detail', id=event_id)
 #####Venue
@@ -566,18 +667,37 @@ def venue_form(request, id=None):
         errors = {}
         if nombre == "":
             errors["nombre"] = "Por favor ingrese un titulo"
+        else:
+            if len(nombre)>200:
+                errors["nombre"] = "El valor ingresado es muy largo"
 
         if direccion == "":
             errors["direccion"] = "Por favor ingrese una descripcion"
+        else:
+            if len(direccion)>200:
+                errors["direccion"] = "El valor ingresado es muy largo"
         
         if ciudad == "":
             errors["ciudad"] = "Por favor ingrese una ciudad"
+        else:
+            if len(ciudad)>200:
+                errors["ciudad"] = "El valor ingresado es muy largo"
             
         if capacidad == "":
             errors["capacidad"] = "Por favor ingrese la capacidad"
+        else:
+            try:
+                capacidad_num = int(capacidad)
+                if capacidad_num <= 0:
+                    errors["capacidad"] = "Por favor ingrese una cantidad mayor a 0"
+            except ValueError:
+                errors["capacidad"] = "Por favor ingrese un número válido"
             
         if contacto == "":
             errors["contacto"] = "Por favor ingrese un contacto"
+        else:
+            if len(contacto)>200:
+                errors["contacto"] = "El valor ingresado es muy largo"
 
         #En caso de que haya errores, se reenvía el formulario con los mensajes correspondientes.
         if errors:

@@ -5,6 +5,7 @@ import uuid
 from django.utils import timezone
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db.models import Avg
 import re
 
 class User(AbstractUser):
@@ -138,6 +139,9 @@ class Event(models.Model):
     def __str__(self):
         return self.title
 
+    def average_rating(self):
+        return self.ratings.filter(bl_baja=False, is_current=True).aggregate(avg_rating=Avg('rating'))['avg_rating']
+    
     @classmethod
     def validate(cls, title, description,venue,scheduled_at, categories=None):
         errors = {}
@@ -350,25 +354,39 @@ class RefundRequest(models.Model):
 
 class Rating(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    event = models.ForeignKey('Event', on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     text = models.TextField(blank=True)
-    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    rating = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     bl_baja = models.BooleanField(default=False)
     is_current = models.BooleanField(default=True)
 
     class Meta:
         constraints = [
-        models.UniqueConstraint(
-            fields=['user', 'event'],
-            condition=models.Q(is_current=True, bl_baja=False),
-            name='unique_active_rating_per_user_event'
-        )
-    ]
-    #Eliminacion logica
+            models.UniqueConstraint(
+                fields=['user', 'event'],
+                condition=models.Q(is_current=True, bl_baja=False),
+                name='unique_active_rating_per_user_event'
+            )
+        ]
+
+    @classmethod
+    def newRating(cls, user, event, title, rating, text=None):
+        try:
+            cls.objects.create(
+                user=user,
+                event=event,
+                title=title,
+                rating=rating,
+                text=text or ''
+            )
+            return True, None
+        except Exception as e:
+            return False, {'db_error': str(e)}
+
     def soft_delete(self):
-        """Marcar como eliminado lógicamente"""
+        """Eliminación lógica sin validaciones"""
         self.bl_baja = True
         self.is_current = False
         self.save()

@@ -667,18 +667,37 @@ def venue_form(request, id=None):
         errors = {}
         if nombre == "":
             errors["nombre"] = "Por favor ingrese un titulo"
+        else:
+            if len(nombre)>200:
+                errors["nombre"] = "El valor ingresado es muy largo"
 
         if direccion == "":
             errors["direccion"] = "Por favor ingrese una descripcion"
+        else:
+            if len(direccion)>200:
+                errors["direccion"] = "El valor ingresado es muy largo"
         
         if ciudad == "":
             errors["ciudad"] = "Por favor ingrese una ciudad"
+        else:
+            if len(ciudad)>200:
+                errors["ciudad"] = "El valor ingresado es muy largo"
             
         if capacidad == "":
             errors["capacidad"] = "Por favor ingrese la capacidad"
+        else:
+            try:
+                capacidad_num = int(capacidad)
+                if capacidad_num <= 0:
+                    errors["capacidad"] = "Por favor ingrese una cantidad mayor a 0"
+            except ValueError:
+                errors["capacidad"] = "Por favor ingrese un número válido"
             
         if contacto == "":
             errors["contacto"] = "Por favor ingrese un contacto"
+        else:
+            if len(contacto)>200:
+                errors["contacto"] = "El valor ingresado es muy largo"
 
         #En caso de que haya errores, se reenvía el formulario con los mensajes correspondientes.
         if errors:

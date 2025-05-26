@@ -105,7 +105,30 @@
                   </p>
               {% else %} 
                       <p class="mb-0 text-muted">Sin Categorias</p>
-              {% endif %}        
+              {% endif %}    
+
+              <p> </p><!-- agrego en detalles la muestra promedio de calificaciones -->
+              {% if request.user == event.organizer %}
+                {% if avg_rating %}
+                  <h6>Total: {{ rating_count }} {{ rating_count|pluralize:"calificación,calificaciones" }}</h6>
+                  <h6>Promedio: <strong>{{ avg_rating|floatformat:1 }}</strong> de 5</h6>
+                  
+
+                  <!-- Mostrar estrellas doradas -->
+                  <div class="stars">
+                      {% for i in "12345" %}
+                          {% if forloop.counter <= avg_rating %}
+                              <span style="color: gold;">★</span>
+                          {% else %}
+                              <span style="color: lightgray;">★</span>
+                          {% endif %}
+                      {% endfor %}
+                  </div>
+                {% else %}
+                    <p>Este evento aún no tiene calificaciones.</p>
+                {% endif %}
+              {% endif %}
+
               </div>
           </div>   
 

@@ -5,6 +5,7 @@ import uuid
 from django.utils import timezone
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db.models import Avg
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)
@@ -114,6 +115,9 @@ class Event(models.Model):
     def __str__(self):
         return self.title
 
+    def average_rating(self):
+        return self.ratings.filter(bl_baja=False, is_current=True).aggregate(avg_rating=Avg('rating'))['avg_rating']
+    
     @classmethod
     def validate(cls, title, description,venue,scheduled_at, categories=None):
         errors = {}

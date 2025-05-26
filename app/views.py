@@ -21,6 +21,7 @@ from django.db import IntegrityError
 from django.db.transaction import atomic
 import logging
 from .forms import RatingForm
+from django.db.models import Avg, Count
 
 logger = logging.getLogger(__name__)
 
@@ -89,17 +90,26 @@ def events(request):
 @login_required
 def event_detail(request, id):
     event = get_object_or_404(Event, pk=id)
-    #Busca los ratings activos
+
+    # Busca los ratings activos
     visible_ratings = event.rating_set.filter(bl_baja=False, is_current=True)
-    
+
+    # Promedio y cantidad de ratings
+    rating_stats = visible_ratings.aggregate(
+        promedio=Avg('rating'),
+        cantidad=Count('id')
+    )
+
     user_rating = None
     if request.user.is_authenticated:
         user_rating = Rating.objects.filter(user=request.user, event=event, is_current=True, bl_baja=False).first()
-    
+
     return render(request, "app/event_detail.html", {
         "event": event,
         "ratings": visible_ratings,
-        "user_rating": user_rating
+        "user_rating": user_rating,
+        "avg_rating": rating_stats["promedio"],
+        "rating_count": rating_stats["cantidad"]
     })
 
 
@@ -269,10 +279,11 @@ def add_comment(request, event_id):
             comment.event = event
             comment.save()
             messages.success(request, '¡Comentario publicado!')
-            return redirect('event_detail', id=event.id)
-    else:
-        form = CommentForm()
-    return render(request, 'comments/add_comment.html', {'form': form, 'event': event})
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error en {field}: {error}")
+    return redirect('event_detail', id=event.id)
 
 @login_required
 def edit_comment(request, comment_id):

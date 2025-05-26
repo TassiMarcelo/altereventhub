@@ -181,6 +181,8 @@ def event_form(request, id=None):
     )
 
 
+
+
 @login_required
 def tickets(request):
     tickets = Ticket.objects.filter(user=request.user, bl_baja=0).order_by("buy_date")
@@ -251,6 +253,16 @@ def ticket_edit_form(request,ticket_code):
     return render(request, "app/ticket_edit_form.html",{"ticket":ticket})
 
 
+def ticket_excede_capacidad_maxima(event, quantity):
+    capacidad_maxima = event.venue.capacity
+    capacidad_utilizada = Ticket.objects.filter(event=event, bl_baja=0).aggregate(total=Sum("quantity"))["total"] or 0
+    print(f"capacidad utilizada: {capacidad_utilizada}")
+    if(capacidad_utilizada+quantity>capacidad_maxima):
+        return True
+    else:
+        return False
+    
+
 @login_required
 def ticket_buy(request, eventId):
     user = request.user
@@ -262,20 +274,26 @@ def ticket_buy(request, eventId):
         if not all([quantity, tipo]):
             messages.error(request, "Todos los campos son obligatorios.")
             return redirect('ticket_form', id=eventId)
-
+        
+        quantity = int(quantity)
         try:
-            quantity = int(quantity)
             if quantity <= 0:
                 raise ValueError
         except ValueError:
             messages.error(request, "La cantidad debe ser un número entero positivo.")
             return redirect('ticket_form', id=eventId)
+        
+        event = get_object_or_404(Event, pk=eventId)
+
+        # Validar si hay cupos disponibles para el ticket
+        if ticket_excede_capacidad_maxima(event,quantity):
+            messages.error(request, "Lo sentimos, la capacidad maxima de entradas fue superada" )
+            print("capacidad maxima SUPERADA")
+            return redirect('ticket_form', id=eventId)
 
         if tipo not in Ticket.Type.values:
             messages.error(request, "El tipo de ticket no es válido.")
             return redirect('ticket_form', id=eventId)
-
-        event = get_object_or_404(Event, pk=eventId)
 
         # Total de tickets comprados por el usuario
         total_user_tickets = Ticket.objects.filter(

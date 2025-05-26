@@ -19,9 +19,10 @@ from django.db.models import Count
 from .models import Venue
 from django.db import IntegrityError
 from django.db.transaction import atomic
+import logging
 from .forms import RatingForm
 
-
+logger = logging.getLogger(__name__)
 
 def register(request):
     if request.method == "POST":
@@ -426,75 +427,110 @@ def rechazar_reembolso(request, refund_id):
         })
     return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
 
+
+
 @login_required
 def create_rating(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
-    
+    user = request.user
+
+    # Verificar si ya existe rating activo
+    if Rating.objects.filter(user=user, event=event, is_current=True, bl_baja=False).exists():
+        messages.error(request, "Ya has calificado este evento")
+        return redirect('event_detail', id=event_id)
+
     if request.method == "POST":
-        form = RatingForm(request.POST)
-        rating_value = request.POST.get("rating", "0")
-        
-        if form.is_valid() and 1 <= int(rating_value) <= 5:
-            # Desactiva los ratings del usuario
-            Rating.objects.filter(
-                event=event,
-                user=request.user,
-                is_current=True
-            ).update(is_current=False)
-            
-            # Crear nueva calificación
+        title = request.POST.get("title", "").strip()
+        text = request.POST.get("text", "").strip()
+        rating_value = request.POST.get("rating")
+
+        rating_data = {
+            "title": title,
+            "text": text,
+            "rating": rating_value,
+            "event": event
+        }
+
+        errors = {}
+
+        # Validación de título
+        if not title:
+            errors["title"] = "Por favor ingrese un título"
+        elif len(title) < 3:
+            errors["title"] = "El título debe tener al menos 3 caracteres"
+
+        # Validación de rating
+        try:
+            rating_int = int(rating_value)
+            if rating_int < 1 or rating_int > 5:
+                errors["rating"] = "La calificación debe estar entre 1 y 5"
+        except (ValueError, TypeError):
+            errors["rating"] = "La calificación debe ser un número válido"
+
+        if errors:
+            for field, error_msg in errors.items():
+                messages.error(request, error_msg)
+            return render(request, "rating/create_rating.html", {
+                "errors": errors,
+                "rating": rating_data,
+                "event": event
+            })
+
+        # Crear el rating
+        try:
             Rating.objects.create(
+                user=user,
                 event=event,
-                user=request.user,
-                title=form.cleaned_data['title'],
-                text=form.cleaned_data['text'],
-                rating=int(rating_value),
+                title=title,
+                text=text,
+                rating=rating_int,
                 is_current=True,
                 bl_baja=False
             )
-            messages.success(request, "Calificación guardada correctamente")
-            return redirect("event_detail", id=event.id)
-        else:
-            messages.error(request, "Error en el formulario. Verifica los datos.")
-    
-    # Muestra formulario
-    form = RatingForm()
-    return render(request, "app/create_rating.html", {
-        "form": form,
-        "event": event
-    })
+            messages.success(request, "¡Calificación guardada correctamente!")
+            return redirect('event_detail', id=event.id)
+            
+        except Exception as e:
+            messages.error(request, f"Error al guardar: {str(e)}")
+            return render(request, "rating/create_rating.html", {
+                "rating": rating_data,
+                "event": event
+            })
+
+    return render(request, "rating/create_rating.html", {"event": event})
 
 
 @login_required
 def update_rating(request, event_id, rating_id):
     event = get_object_or_404(Event, pk=event_id)
-    rating = get_object_or_404(Rating, pk=rating_id, user=request.user)
+    rating = get_object_or_404(Rating, pk=rating_id, user=request.user, event=event)
 
     if request.method == "POST":
         form = RatingForm(request.POST, instance=rating)
-        rating_value = request.POST.get("rating")
-
-        try:
-            rating_value = int(rating_value)
-            if form.is_valid() and 1 <= rating_value <= 5:
-                form.instance.rating = rating_value  # Asignamos el valor al modelo
+        if form.is_valid():
+            try:
+                # Guardar el formulario
                 form.save()
-                messages.success(request, "Calificación actualizada correctamente")
-                return redirect("event_detail", id=event.id)
-            else:
-                messages.error(request, "La calificación debe estar entre 1 y 5 estrellas.")
-        except (TypeError, ValueError):
-            messages.error(request, "Por favor seleccioná una cantidad de estrellas.")
-
+                messages.success(request, "¡Calificación actualizada correctamente!")
+                return redirect('event_detail', id=event.id)
+                
+            except Exception as e:
+                messages.error(request, f"Error al guardar: {str(e)}")
+        else:
+            # Mostrar errores de validación
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     else:
+        # Inicializar formulario
         form = RatingForm(instance=rating)
 
     return render(request, "rating/update_rating.html", {
-        "form": form,
-        "event": event,
-        "rating": rating,
-        "current_rating": rating.rating  # para inicializar las estrellas en el HTML
+        'form': form,
+        'event': event,
+        'rating': rating
     })
+
 
 @login_required
 def list_ratings(request, event_id):
@@ -502,20 +538,27 @@ def list_ratings(request, event_id):
     ratings = event.rating_set.filter(bl_baja=False).order_by('-created_at')
     user_rating = ratings.filter(user=request.user).first()
     
-    return render(request, "app/list_ratings.html", {
+    return render(request, "rating/list_ratings.html", {
         "event": event,
         "ratings": ratings,
         "user_rating": user_rating
     })
+
+
 @login_required
 def delete_rating(request, event_id, rating_id):
     rating = get_object_or_404(Rating, id=rating_id, event_id=event_id)
 
-    if request.user == rating.user or request.user == rating.event.organizer:
-        rating.soft_delete()  #Manejo de la baja logica
-        messages.success(request, "Calificación eliminada correctamente.")
-    else:
-        messages.error(request, "No tienes permiso para eliminar esta calificación.")
+    if request.user != rating.user and request.user != rating.event.organizer:
+        messages.error(request, "No tienes permiso para realizar esta acción")
+        return redirect('event_detail', id=event_id)
+
+    try:
+        rating.soft_delete()
+        messages.success(request, "Calificación eliminada correctamente")
+    except Exception as e:
+        logger.error(f"Error deleting rating: {str(e)}")
+        messages.error(request, "Ocurrió un error al eliminar la calificación")
 
     return redirect('event_detail', id=event_id)
 #####Venue

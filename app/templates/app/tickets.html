@@ -1,18 +1,28 @@
 {% extends "base.html" %}
 
-{% block title %}Eventos{% endblock %}
+{% block title %}Mis Tickets{% endblock %}
 
 {% block content %}
 <div class="container">
+    <!-- Bloque para mostrar mensajes -->
+    {% if messages %}
+    <div class="messages mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Mis tickets</h1>
-        <a
-            href="{% url 'solicitar_reembolso' %}"
-            class="btn btn-primary"
-        >
+        <a href="{% url 'solicitar_reembolso' %}" class="btn btn-primary">
             Solicitar reembolso
         </a>
     </div>
+    
     <table class="table">
         <thead>
             <tr>
@@ -20,43 +30,42 @@
                 <th>Cantidad</th>
                 <th>Tipo</th>
                 <th>Fecha de compra</th>
-                <th>Codigo</th>
-                <th>Accion</th>
+                <th>Código</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
-            {% for ticket in tickets%}
-                <tr>
-                    <td>{{ ticket.event.title }}</td>
-                    <td>{{ ticket.quantity }}</td>
-                    <td>{{ ticket.type }}</td>
-                    <td>{{ ticket.buy_date|date:"d b Y, H:i" }}</td>
-                    <td>{{ ticket.ticket_code }}</td>
-                    <td>
-                        <div class="hstack gap-1">
-                            <a href="{% url 'ticket_edit_form' ticket.ticket_code %}"
-                                class="btn btn-sm btn-outline-secondary"
-                                aria-label="Editar"
-                                title="Editar">
-                                <i class="bi bi-pencil" aria-hidden="true"></i>
-                            </a>
-                            <form action="{% url 'ticket_delete' ticket.ticket_code %}" method="POST">
-                                {% csrf_token %}
-                                <button class="btn btn-sm btn-outline-danger"
-                                    title="Eliminar"
+            {% for ticket in tickets %}
+            <tr>
+                <td>{{ ticket.event.title }}</td>
+                <td>{{ ticket.quantity }}</td>
+                <td>{{ ticket.get_type_display }}</td>
+                <td>{{ ticket.buy_date|date:"d M Y, H:i" }}</td>
+                <td>{{ ticket.ticket_code }}</td>
+                <td>
+                    <div class="hstack gap-1">
+                        <a href="{% url 'ticket_edit_form' ticket.ticket_code %}"
+                           class="btn btn-sm btn-outline-secondary"
+                           aria-label="Editar"
+                           title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form action="{% url 'ticket_delete' ticket.ticket_code %}" method="POST">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-outline-danger"
                                     type="submit"
                                     aria-label="Eliminar"
-                                    titile="Eliminar">
-                                    <i class="bi bi-trash" aria-hidden="true"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
+                                    title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
             {% empty %}
-                <tr>
-                    <td colspan="4" class="text-center">No hay tickets comprados</td>
-                </tr>
+            <tr>
+                <td colspan="6" class="text-center">No hay tickets comprados</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>

@@ -268,10 +268,11 @@ def add_comment(request, event_id):
             comment.event = event
             comment.save()
             messages.success(request, '¡Comentario publicado!')
-            return redirect('event_detail', id=event.id)
-    else:
-        form = CommentForm()
-    return render(request, 'comments/add_comment.html', {'form': form, 'event': event})
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error en {field}: {error}")
+    return redirect('event_detail', id=event.id)
 
 @login_required
 def edit_comment(request, comment_id):

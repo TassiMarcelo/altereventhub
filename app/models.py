@@ -5,6 +5,7 @@ import uuid
 from django.utils import timezone
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
+import re
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)
@@ -36,17 +37,40 @@ class Category(models.Model):
     is_active = models.BooleanField(default=True)
     events = models.ManyToManyField("Event", related_name="category_events", blank=True)
     
-    def clean(self):
-        if not self.name.strip():
-            raise ValidationError("El nombre de la categoria no puede estar vacio")
+    @classmethod
+    def validateCategory(cls, name, description=None, category_id=None):
+        error = {}
 
-        existing = Category.objects.filter(name=self.name, is_active=True)
-        if self.pk:
-            existing = existing.exclude(pk=self.pk) 
+        if not name or not name.strip():  # verifica que se escriba algo y no este en blanco o tenga un espacio
+            error["name"]= "El nombre de la categoria no puede estar vacio"  
 
-        if self.is_active and existing.exists():
-            raise ValidationError("El nombre de la categoria ya existe")
+        existing = cls.objects.filter(name=name.strip()) #Para poder editar sin que tome que el nombre de la categoria ya existe
+        if category_id:
+            existing = existing.exclude(pk=category_id)
+        if existing.exists():
+            
+            error["name"]= "El nombre de la categoria ya existe"
 
+        if not description or not description.strip():
+            error["description"]= "Ingrese la descripcion de la categoria"
+        elif not re.match(r'^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]+$', description.strip()):
+            error["description"]= "La descripcion solo puede contener letras y numeros"
+
+        return error
+
+    @classmethod
+    def newCategory(cls,name, description=None, is_active=True):
+        errors =cls.validateCategory(name, description)
+        if len(errors) > 0:
+            return False, errors
+        
+        category = cls.objects.create(
+            name=name.strip(),
+            description=description.strip() if description else "", #nos ayuda a no crear una categoria sin descripcion
+            is_active=is_active
+        )
+        return True, None
+        
     def __str__(self):
         return self.name    
 

@@ -661,7 +661,6 @@ def category_list(request):
                   
 @login_required
 def category_form(request, id=None):
-    
     if not request.user.is_organizer:
         return redirect("category_list")
     
@@ -676,32 +675,21 @@ def category_form(request, id=None):
         description = request.POST.get("description","")
         is_active = request.POST.get("is_active") == "on"
 
-        if not name:
-            errors["name"] = ["El nombre de la categoria es obligatorio"]
-        
-        if not description:
-            errors["description"] = ["La descripcion es obligatoria"]
-
-        if Category.objects.filter(name=name).exclude(pk=id).exists():  # Excluir la categoría actual si estamos editando
-            errors["name"] = ["Ya existe una categoría con el mismo nombre."]
+        errors = Category.validateCategory(name, description, category_id=category.id if category else None)
         
         if not errors:
-
             if category:
                 category.name = name
                 category.description = description
-                category. is_active = is_active
+                category.is_active = is_active
             else:
-                category = Category(name=name, description=description, is_active=is_active)
-            
+                category = Category(name=name, description=description, is_active=is_active)  
             try:
-                 category.clean()
-                 category.save()
-                 return redirect("category_list")
-            
+                category.clean()
+                category.save()
+                return redirect("category_list")
             except ValidationError as e:
-        
-                errors = e.message_dict
+                errors= e.message_dict
 
         return render(
             request,

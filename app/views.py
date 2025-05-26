@@ -455,8 +455,6 @@ def create_rating(request, event_id):
         # Validación de título
         if not title:
             errors["title"] = "Por favor ingrese un título"
-        elif len(title) < 3:
-            errors["title"] = "El título debe tener al menos 3 caracteres"
 
         # Validación de rating
         try:

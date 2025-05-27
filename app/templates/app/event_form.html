@@ -12,6 +12,17 @@
                 {% endif %}
             </h1>
 
+                {% if messages %}
+                    {% for message in messages %}
+                         {% if message.tags == 'error' %}
+                            <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert" >
+                       
+                            {{ message }}
+                            </div>
+                         {% endif %}
+                    {% endfor %}
+                {% endif %}
+
             <div class="card">
                 <div class="card-body">
                     <form action="{% if event.id %}{% url 'event_edit' event.id %}{% else %}{% url 'event_form' %}{% endif %}" method="POST">

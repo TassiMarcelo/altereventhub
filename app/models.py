@@ -156,6 +156,8 @@ class Event(models.Model):
         return True, None
 
     def update(self, title, description,venue,status, scheduled_at, organizer, categories=None):
+        if self.status==Event.Status.FINALIZADO and status!=self.status:
+            raise ValueError("No se puede cambiar el estado de un evento Finalizado.")
         self.title = title or self.title
         self.description = description or self.description
         self.scheduled_at = scheduled_at or self.scheduled_at

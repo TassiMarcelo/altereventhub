@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db.models import Avg
 import re
+from app.utils import calculate_average_rating
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)
@@ -141,7 +142,8 @@ class Event(models.Model):
         return self.title
 
     def average_rating(self):
-        return self.ratings.filter(bl_baja=False, is_current=True).aggregate(avg_rating=Avg('rating'))['avg_rating']
+        filtered_ratings = self.rating_set.filter(bl_baja=False, is_current=True)
+        return calculate_average_rating(filtered_ratings)
     
     @classmethod
     def validate(cls, title, description,venue,scheduled_at, categories=None):

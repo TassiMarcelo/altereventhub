@@ -22,6 +22,7 @@ from django.db import IntegrityError
 from django.db.transaction import atomic
 import logging
 from .forms import RatingForm
+from django.db.models import Avg, Count
 
 logger = logging.getLogger(__name__)
 
@@ -90,17 +91,26 @@ def events(request):
 @login_required
 def event_detail(request, id):
     event = get_object_or_404(Event, pk=id)
-    #Busca los ratings activos
+
+    # Busca los ratings activos
     visible_ratings = event.rating_set.filter(bl_baja=False, is_current=True)
-    
+
+    # Promedio y cantidad de ratings
+    rating_stats = visible_ratings.aggregate(
+        promedio=Avg('rating'),
+        cantidad=Count('id')
+    )
+
     user_rating = None
     if request.user.is_authenticated:
         user_rating = Rating.objects.filter(user=request.user, event=event, is_current=True, bl_baja=False).first()
-    
+
     return render(request, "app/event_detail.html", {
         "event": event,
         "ratings": visible_ratings,
-        "user_rating": user_rating
+        "user_rating": user_rating,
+        "avg_rating": rating_stats["promedio"],
+        "rating_count": rating_stats["cantidad"]
     })
 
 
@@ -129,12 +139,13 @@ def event_form(request, id=None):
     categories = Category.objects.filter(is_active=True)
     selected_categories = []
 
-    if request.method == "POST":
+    if request.method == "POST":  
         title = request.POST.get("title")
         description = request.POST.get("description")
         date = request.POST.get("date")
         time = request.POST.get("time")
         venue_id = request.POST.get("venueSelect")
+        status=request.POST.get("status")
         category_ids = request.POST.getlist("categories")
 
         [year, month, day] = date.split("-")
@@ -150,7 +161,7 @@ def event_form(request, id=None):
             Event.new(title, description,venue, scheduled_at, request.user, selected_categories)
         else:
             event = get_object_or_404(Event, pk=id)
-            event.update(title, description,venue, scheduled_at, request.user, selected_categories)
+            event.update(title, description,venue,status, scheduled_at, request.user, selected_categories)
 
         return redirect("events")
 
@@ -320,10 +331,11 @@ def add_comment(request, event_id):
             comment.event = event
             comment.save()
             messages.success(request, '¡Comentario publicado!')
-            return redirect('event_detail', id=event.id)
-    else:
-        form = CommentForm()
-    return render(request, 'comments/add_comment.html', {'form': form, 'event': event})
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error en {field}: {error}")
+    return redirect('event_detail', id=event.id)
 
 @login_required
 def edit_comment(request, comment_id):
@@ -507,8 +519,6 @@ def create_rating(request, event_id):
         # Validación de título
         if not title:
             errors["title"] = "Por favor ingrese un título"
-        elif len(title) < 3:
-            errors["title"] = "El título debe tener al menos 3 caracteres"
 
         # Validación de rating
         try:
@@ -660,18 +670,37 @@ def venue_form(request, id=None):
         errors = {}
         if nombre == "":
             errors["nombre"] = "Por favor ingrese un titulo"
+        else:
+            if len(nombre)>200:
+                errors["nombre"] = "El valor ingresado es muy largo"
 
         if direccion == "":
             errors["direccion"] = "Por favor ingrese una descripcion"
+        else:
+            if len(direccion)>200:
+                errors["direccion"] = "El valor ingresado es muy largo"
         
         if ciudad == "":
             errors["ciudad"] = "Por favor ingrese una ciudad"
+        else:
+            if len(ciudad)>200:
+                errors["ciudad"] = "El valor ingresado es muy largo"
             
         if capacidad == "":
             errors["capacidad"] = "Por favor ingrese la capacidad"
+        else:
+            try:
+                capacidad_num = int(capacidad)
+                if capacidad_num <= 0:
+                    errors["capacidad"] = "Por favor ingrese una cantidad mayor a 0"
+            except ValueError:
+                errors["capacidad"] = "Por favor ingrese un número válido"
             
         if contacto == "":
             errors["contacto"] = "Por favor ingrese un contacto"
+        else:
+            if len(contacto)>200:
+                errors["contacto"] = "El valor ingresado es muy largo"
 
         #En caso de que haya errores, se reenvía el formulario con los mensajes correspondientes.
         if errors:
@@ -755,7 +784,6 @@ def category_list(request):
                   
 @login_required
 def category_form(request, id=None):
-    
     if not request.user.is_organizer:
         return redirect("category_list")
     
@@ -770,32 +798,21 @@ def category_form(request, id=None):
         description = request.POST.get("description","")
         is_active = request.POST.get("is_active") == "on"
 
-        if not name:
-            errors["name"] = ["El nombre de la categoria es obligatorio"]
-        
-        if not description:
-            errors["description"] = ["La descripcion es obligatoria"]
-
-        if Category.objects.filter(name=name).exclude(pk=id).exists():  # Excluir la categoría actual si estamos editando
-            errors["name"] = ["Ya existe una categoría con el mismo nombre."]
+        errors = Category.validateCategory(name, description, category_id=category.id if category else None)
         
         if not errors:
-
             if category:
                 category.name = name
                 category.description = description
-                category. is_active = is_active
+                category.is_active = is_active
             else:
-                category = Category(name=name, description=description, is_active=is_active)
-            
+                category = Category(name=name, description=description, is_active=is_active)  
             try:
-                 category.clean()
-                 category.save()
-                 return redirect("category_list")
-            
+                category.clean()
+                category.save()
+                return redirect("category_list")
             except ValidationError as e:
-        
-                errors = e.message_dict
+                errors= e.message_dict
 
         return render(
             request,

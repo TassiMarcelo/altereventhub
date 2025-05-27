@@ -5,6 +5,8 @@ import uuid
 from django.utils import timezone
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db.models import Avg
+import re
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)
@@ -36,17 +38,40 @@ class Category(models.Model):
     is_active = models.BooleanField(default=True)
     events = models.ManyToManyField("Event", related_name="category_events", blank=True)
     
-    def clean(self):
-        if not self.name.strip():
-            raise ValidationError("El nombre de la categoria no puede estar vacio")
+    @classmethod
+    def validateCategory(cls, name, description=None, category_id=None):
+        error = {}
 
-        existing = Category.objects.filter(name=self.name, is_active=True)
-        if self.pk:
-            existing = existing.exclude(pk=self.pk) 
+        if not name or not name.strip():  # verifica que se escriba algo y no este en blanco o tenga un espacio
+            error["name"]= "El nombre de la categoria no puede estar vacio"  
 
-        if self.is_active and existing.exists():
-            raise ValidationError("El nombre de la categoria ya existe")
+        existing = cls.objects.filter(name=name.strip()) #Para poder editar sin que tome que el nombre de la categoria ya existe
+        if category_id:
+            existing = existing.exclude(pk=category_id)
+        if existing.exists():
+            
+            error["name"]= "El nombre de la categoria ya existe"
 
+        if not description or not description.strip():
+            error["description"]= "Ingrese la descripcion de la categoria"
+        elif not re.match(r'^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]+$', description.strip()):
+            error["description"]= "La descripcion solo puede contener letras y numeros"
+
+        return error
+
+    @classmethod
+    def newCategory(cls,name, description=None, is_active=True):
+        errors =cls.validateCategory(name, description)
+        if len(errors) > 0:
+            return False, errors
+        
+        category = cls.objects.create(
+            name=name.strip(),
+            description=description.strip() if description else "", #nos ayuda a no crear una categoria sin descripcion
+            is_active=is_active
+        )
+        return True, None
+        
     def __str__(self):
         return self.name    
 
@@ -89,11 +114,24 @@ class Venue(models.Model):
 
 
 class Event(models.Model):
+    class Status(models.TextChoices):
+        ACTIVO = 'Activo', 'Activo'
+        CANCELADO = 'Cancelado', 'Cancelado'
+        REPROGRAMADO = 'Reprogramado', 'Reprogramado'
+        AGOTADO = 'Agotado', 'Agotado'
+        FINALIZADO = 'Finalizado', 'Finalizado'
+
+
     title = models.CharField(max_length=200)
     description = models.TextField()
     scheduled_at = models.DateTimeField()
     organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_events")
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name="events")
+    status = models.CharField(
+    max_length=20,
+    choices=Status.choices,
+    default=Status.ACTIVO
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     categories = models.ManyToManyField(Category, related_name="events_categories", blank=True)
@@ -101,8 +139,11 @@ class Event(models.Model):
     def __str__(self):
         return self.title
 
+    def average_rating(self):
+        return self.ratings.filter(bl_baja=False, is_current=True).aggregate(avg_rating=Avg('rating'))['avg_rating']
+    
     @classmethod
-    def validate(cls, title, description,venue, scheduled_at, categories=None):
+    def validate(cls, title, description,venue,scheduled_at, categories=None):
         errors = {}
 
         if title == "":
@@ -124,6 +165,24 @@ class Event(models.Model):
     def active_tickets(self):
         return self.tickets.filter(bl_baja=False)
 
+    @property
+    def countdown(self):
+        now = timezone.now()
+        if self.scheduled_at <= now:
+            return {'days': 0, 'hours': 0, 'minutes': 0}
+
+        delta: timedelta = self.scheduled_at - now
+        total_seconds = int(delta.total_seconds())
+        days = total_seconds // 86400
+        hours = (total_seconds % 86400) // 3600
+        minutes = (total_seconds % 3600) // 60
+
+        return {
+            'days': days,
+            'hours': hours,
+            'minutes': minutes
+        }
+
     @classmethod
     def new(cls, title, description,venue, scheduled_at, organizer, categories=None):
         errors = cls.validate(title, description,venue, scheduled_at, categories)
@@ -142,12 +201,13 @@ class Event(models.Model):
             event.categories.set(categories)
         return True, None
 
-    def update(self, title, description,venue, scheduled_at, organizer, categories=None):
+    def update(self, title, description,venue,status, scheduled_at, organizer, categories=None):
         self.title = title or self.title
         self.description = description or self.description
         self.scheduled_at = scheduled_at or self.scheduled_at
         self.organizer = organizer or self.organizer
         self.venue = venue or self.venue
+        self.status= status or self.status
         self.save()
         if categories is not None:
             self.categories.set(categories)
@@ -289,30 +349,30 @@ class RefundRequest(models.Model):
     def __str__(self):
         return f"Refund {self.ticket_code}"
 
-    @classmethod
-    def validate(cls, ticket_code, reason):
+    def clean(self):
         errors = {}
+        if not self.ticket_code.strip():
+            errors["ticket_code"] = "Ingrese el código del ticket"
+        if not self.reason.strip():
+            errors["reason"] = "Seleccione un motivo válido"
 
-        if ticket_code == "":
-            errors["ticket_code"] = "Por favor ingrese el código del ticket"
-        if reason == "":
-            errors["reason"] = "Por favor ingrese el motivo del reembolso"
-
-        return errors
+        if errors:
+            raise ValidationError(errors)
 
     @classmethod
     def new(cls, ticket_code, reason, details, requester):
-        errors = cls.validate(ticket_code, reason)
-        if errors:
-            return False, errors
-
-        cls.objects.create(
+        refund = cls(
             ticket_code=ticket_code,
             reason=reason,
             details=details,
             requester=requester,
         )
-        return True, None
+        try:
+            refund.full_clean()
+            refund.save()
+            return True, None
+        except ValidationError as e:
+            return False, e.message_dict
 
     def approve(self):
         self.status = self.Status.APPROVED
@@ -330,6 +390,11 @@ class RefundRequest(models.Model):
         if reason:
             self.reason = reason
         self.save()
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()  
+        super().save(*args, **kwargs)
+
 
 
 class Rating(models.Model):

@@ -3,14 +3,15 @@
 {% block content %}
 
 {% if messages %}
-<script>
+  <div class="container mt-3">
     {% for message in messages %}
-        alert("{{ message|escapejs }}");
+      <div class="alert alert-info alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
     {% endfor %}
-</script>
+  </div>
 {% endif %}
-
-
 
 <div class="container mt-5">
     <div class="card shadow-lg">
@@ -61,7 +62,6 @@
                     </div>
                 </div>
 
-                <!-- ...dentro del <form> antes del botón de Comprar -->
                 <div class="form-check mb-4">
                     <input class="form-check-input" type="checkbox" value="" id="terms" required>
                     <label class="form-check-label" for="refundPolicy">
@@ -77,6 +77,7 @@
         </div>
     </div>
 </div>
+
 <div class="modal fade" id="refundPolicyModal" tabindex="-1" aria-labelledby="refundPolicyModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -99,6 +100,7 @@
       </div>
     </div>
 </div>
+
 <script>
     document.getElementById('card_number').addEventListener('input', function (e) {
         let value = e.target.value.replace(/\D/g, '').substring(0, 16); // Solo dígitos, máx 16
@@ -106,4 +108,5 @@
         e.target.value = formatted;
     });
 </script>
+
 {% endblock %}

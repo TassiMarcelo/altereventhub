@@ -34,7 +34,7 @@ class TicketLogicTest(TestCase):
         try:
             Ticket.objects.create(user=self.user, event=self.event, quantity=1, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
         except ValidationError:
-            print("✅ prueba_limite_4_tickets detectó correctamente exceso de tickets")
+            print("✅ test_limite_4_tickets detectó correctamente exceso de tickets")
         else:
             self.fail("ValidationError no fue lanzado al exceder el límite de tickets")
 
@@ -45,7 +45,7 @@ class TicketLogicTest(TestCase):
         tickets = Ticket.objects.filter(user=self.user, event=self.event, bl_baja=False)
         total_quantity = sum(ticket.quantity for ticket in tickets)
         self.assertLessEqual(total_quantity, 4)
-        print("✅ test_edit_ticket_within_limit pasó correctamente")
+        print("✅ test_editar_dentro_del_limite pasó correctamente")
 
     def test_editar_superando_limite(self):
         t1 = Ticket.objects.create(user=self.user, event=self.event, quantity=2, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
@@ -55,6 +55,6 @@ class TicketLogicTest(TestCase):
         try:
             t1.save()
         except ValidationError:
-            print("✅ prueba_editar_superando_limite detectó correctamente exceso al editar ticket")
+            print("✅ test_editar_superando_limite detectó correctamente exceso al editar ticket")
         else:
             self.fail("ValidationError no fue lanzado al editar ticket y exceder límite")

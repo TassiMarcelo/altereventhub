@@ -309,30 +309,30 @@ class RefundRequest(models.Model):
     def __str__(self):
         return f"Refund {self.ticket_code}"
 
-    @classmethod
-    def validate(cls, ticket_code, reason):
+    def clean(self):
         errors = {}
+        if not self.ticket_code.strip():
+            errors["ticket_code"] = "Ingrese el código del ticket"
+        if not self.reason.strip():
+            errors["reason"] = "Seleccione un motivo válido"
 
-        if ticket_code == "":
-            errors["ticket_code"] = "Por favor ingrese el código del ticket"
-        if reason == "":
-            errors["reason"] = "Por favor ingrese el motivo del reembolso"
-
-        return errors
+        if errors:
+            raise ValidationError(errors)
 
     @classmethod
     def new(cls, ticket_code, reason, details, requester):
-        errors = cls.validate(ticket_code, reason)
-        if errors:
-            return False, errors
-
-        cls.objects.create(
+        refund = cls(
             ticket_code=ticket_code,
             reason=reason,
             details=details,
             requester=requester,
         )
-        return True, None
+        try:
+            refund.full_clean()
+            refund.save()
+            return True, None
+        except ValidationError as e:
+            return False, e.message_dict
 
     def approve(self):
         self.status = self.Status.APPROVED
@@ -350,6 +350,11 @@ class RefundRequest(models.Model):
         if reason:
             self.reason = reason
         self.save()
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()  
+        super().save(*args, **kwargs)
+
 
 
 class Rating(models.Model):

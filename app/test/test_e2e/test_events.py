@@ -83,13 +83,13 @@ class EventBaseTest(BaseE2ETest):
         delete_form = row0.locator("form")
 
         expect(detail_button).to_be_visible()
-        expect(detail_button).to_have_attribute("href", f"/events/{self.event1.id}/")
+        expect(detail_button).to_have_attribute("href", f"/events/{self.event1.pk}/")
 
         if user_type == "organizador":
             expect(edit_button).to_be_visible()
-            expect(edit_button).to_have_attribute("href", f"/events/{self.event1.id}/edit/")
+            expect(edit_button).to_have_attribute("href", f"/events/{self.event1.pk}/edit/")
 
-            expect(delete_form).to_have_attribute("action", f"/events/{self.event1.id}/delete/")
+            expect(delete_form).to_have_attribute("action", f"/events/{self.event1.pk}/delete/")
             expect(delete_form).to_have_attribute("method", "POST")
 
             delete_button = delete_form.get_by_role("button", name="Eliminar")

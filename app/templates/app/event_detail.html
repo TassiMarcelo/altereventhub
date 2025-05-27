@@ -78,7 +78,7 @@
               <div>
                 <h6 class="mb-1 text-muted">Fecha y Hora</h6>
         <p class="mb-0 fs-7">{{ event.scheduled_at|date:"l, j \\d\\e F \\d\\e Y, H:i" }}</p>
-       {% if event.countdown and not user_is_organizer %}
+       {% if event.countdown and not request.user.is_organizer %}
         <p class="mb-0 text-muted" id="countdown-text">
     Cargando countdown...
 </p>

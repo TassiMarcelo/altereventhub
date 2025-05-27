@@ -860,15 +860,17 @@ def category_events(request, id):
     events = category.events_categories.all()
     return render(request, "app/category_events.html", {"category": category, "events": events})
 
+@login_required
 @require_GET
 def countdown_json(request, event_id):
-    try:
-        event = Event.objects.get(id=event_id)
-        countdown = event.countdown
-        return JsonResponse({
-            'days': countdown['days'],
-            'hours': countdown['hours'],
-            'minutes': countdown['minutes']
-        })
-    except Event.DoesNotExist:
-        return JsonResponse({'error': 'Evento no encontrado'}, status=404)
+    event = get_object_or_404(Event, id=event_id)
+
+    if request.user.is_organizer:
+        return JsonResponse({'error': 'Los organizadores no pueden ver el countdown.'}, status=403)
+
+    countdown = event.countdown
+    return JsonResponse({
+        'days': countdown['days'],
+        'hours': countdown['hours'],
+        'minutes': countdown['minutes']
+    })

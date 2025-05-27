@@ -165,6 +165,24 @@ class Event(models.Model):
     def active_tickets(self):
         return self.tickets.filter(bl_baja=False)
 
+    @property
+    def countdown(self):
+        now = timezone.now()
+        if self.scheduled_at <= now:
+            return {'days': 0, 'hours': 0, 'minutes': 0}
+
+        delta: timedelta = self.scheduled_at - now
+        total_seconds = int(delta.total_seconds())
+        days = total_seconds // 86400
+        hours = (total_seconds % 86400) // 3600
+        minutes = (total_seconds % 3600) // 60
+
+        return {
+            'days': days,
+            'hours': hours,
+            'minutes': minutes
+        }
+
     @classmethod
     def new(cls, title, description,venue, scheduled_at, organizer, categories=None):
         errors = cls.validate(title, description,venue, scheduled_at, categories)

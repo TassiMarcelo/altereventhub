@@ -12,19 +12,18 @@ class EventCountdownTest(BaseE2ETest):
       
         self.organizer = User.objects.create_user(
             username="organizador",
-            email="org2@example.com",
+            email="org@example.com",
             password="password123",
             is_organizer=True,
         )
         self.regular_user = User.objects.create_user(
             username="usuario",
-            email="user2@example.com",
+            email="user@example.com",
             password="password123",
             is_organizer=False,
         )
         self.venue = Venue.objects.create(name="Test Venue", address="123 Calle")
 
-        # Crear evento futuro (+1 día, 2 horas, 30 minutos)
         future_date = timezone.now() + datetime.timedelta(days=1, hours=2, minutes=30)
         self.future_event = Event.objects.create(
             title="Evento con Countdown",
@@ -40,7 +39,6 @@ class EventCountdownTest(BaseE2ETest):
 
         self.page.goto(f"{self.live_server_url}/events/{self.future_event.id}/")
 
-        # Esperar a que #countdown-text sea visible
         self.page.wait_for_selector("#countdown-text", state="visible")
         countdown = self.page.locator("#countdown-text")
         expect(countdown).to_be_visible()
@@ -56,4 +54,4 @@ class EventCountdownTest(BaseE2ETest):
         self.page.goto(f"{self.live_server_url}/events/{self.future_event.id}/")
 
         countdown = self.page.locator("#countdown-text")
-        expect(countdown).to_have_count(0)  # No debe aparecer para organizadores
+        expect(countdown).to_have_count(0)  

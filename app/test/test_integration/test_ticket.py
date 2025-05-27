@@ -5,12 +5,13 @@ from app.models import *
 import datetime
 from django.db.models import Sum
 
-class TicketIntegrationSimplifiedTest(TestCase):
+    
+class TicketModelTest(TestCase):
     def setUp(self):
         self.password = "contraseña123"
-        self.user = User.objects.create_user(username="usuario_test", password=self.password, email="user@test.com")
-        self.organizer = User.objects.create_user(username="organizador_test", password="passorg", email="org@test.com", is_organizer=True)
-        self.venue = Venue.objects.create(name="Estadio Central", address="Av. Siempre Viva 123", city="La plata", capacity=100, contact="contact@venue.com")
+        self.user = User.objects.create_user(username="usuario_prueba", password=self.password, email="user@test.com")
+        self.organizer = User.objects.create_user(username="organizador_prueba", password="passorg", email="org@test.com", is_organizer=True)
+        self.venue = Venue.objects.create(name="Estadio Central", address="Av. Siempre Viva 123", city="La plata", capacity=100, contact="contacto@venue.com")
         self.event = Event.objects.create(title="Evento Test", description="Evento para test", organizer=self.organizer, venue=self.venue, scheduled_at=timezone.now() + timezone.timedelta(days=10))
         self.client.login(username=self.user.username, password=self.password)
 
@@ -23,6 +24,7 @@ class TicketIntegrationSimplifiedTest(TestCase):
         self.assertEqual(response.status_code, 302)
         total = Ticket.objects.filter(user=self.user, event=self.event, bl_baja=0).aggregate(total=Sum('quantity'))['total'] or 0
         self.assertEqual(total, 4)
+        print("Paso prueba comprar dentro de limite")
 
     def test_comprar_excediendo_limite(self):
         # Excede el limite
@@ -33,6 +35,7 @@ class TicketIntegrationSimplifiedTest(TestCase):
         self.assertContains(response, "No puedes comprar más de 4 entradas por evento.")
         total = Ticket.objects.filter(user=self.user, event=self.event, bl_baja=0).aggregate(total=Sum('quantity'))['total'] or 0
         self.assertEqual(total, 0)
+        print("Paso prueba comprar excediendo limite")
 
     def test_comprar_varias_veces_superando_limite_acumulado(self):
         # Compra inicial 3 tickets
@@ -51,6 +54,7 @@ class TicketIntegrationSimplifiedTest(TestCase):
 
         total = Ticket.objects.filter(user=self.user, event=self.event, bl_baja=0).aggregate(total=Sum('quantity'))['total'] or 0
         self.assertEqual(total, 3)
+        print("Paso prueba varias compras superando limite")
 
     def test_editar_tickets_a_cantidad_valida(self):
         # Compra inicial 2 tickets
@@ -70,6 +74,7 @@ class TicketIntegrationSimplifiedTest(TestCase):
 
         ticket.refresh_from_db()
         self.assertEqual(ticket.quantity, 3)
+        print("Paso prueba editar a cantidad valida ")
 
     def test_editar_tickets_excediendo_limite(self):
         # Compra inicial 3 tickets
@@ -96,10 +101,7 @@ class TicketIntegrationSimplifiedTest(TestCase):
 
         ticket.refresh_from_db()
         self.assertNotEqual(ticket.quantity, 4)
-
-
-
-class TicketModelTest(TestCase):
+        print("Paso prueba editar excediendo limite")
 
     def test_buy_exceed_tickets(self):
 

@@ -166,3 +166,4 @@ cython_debug/
 
 staticfiles
 .vscode/settings.json
+db.sqlite3

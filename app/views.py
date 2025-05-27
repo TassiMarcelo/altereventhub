@@ -290,7 +290,6 @@ def ticket_buy(request, eventId):
 
         if total_user_tickets + quantity > 4:
             messages.error(request, f"No puedes comprar más de 4 entradas por evento.")
-            print(f"Compra rechazada: el usuario quiere comprar {total_user_tickets + quantity}, que supera el límite.")
             return redirect('ticket_form', id=eventId)
 
         # Crear ticket

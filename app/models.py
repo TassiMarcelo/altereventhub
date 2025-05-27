@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -245,17 +246,28 @@ class Ticket(models.Model):
 
     def __str__(self) -> str:
         return str(self.ticket_code)
+    @classmethod
+    def ticket_excede_limite_usuario(cls, user_id, event_id, nueva_cantidad, ticket_id=None):
+        tickets = cls.objects.filter(user_id=user_id, event_id=event_id, bl_baja=False)
+        total = 0
+        for t in tickets:
+            if ticket_id and t.id == ticket_id:
+                total += nueva_cantidad
+            else:
+                total += t.quantity
+        return total > 4
+
 
     def clean(self):
-        # Validar que la cantidad total de tickets para este usuario y evento no exceda 4
-        tickets = Ticket.objects.filter(
-            user=self.user,
-            event=self.event,
-            bl_baja=False
-        ).exclude(pk=self.pk)
-        total_quantity = sum(t.quantity for t in tickets) + self.quantity
-        if total_quantity > 4:
+    # Usar el método para validar el límite
+        if self.ticket_excede_limite_usuario(
+            user_id=self.user.id,
+            event_id=self.event.id,
+            nueva_cantidad=self.quantity,
+            ticket_id=self.pk
+        ):
             raise ValidationError("No puedes tener más de 4 tickets para un mismo evento.")
+
 
     def save(self, *args, **kwargs):
         self.full_clean()  # Esto llama a clean() y levanta ValidationError si no pasa la validación

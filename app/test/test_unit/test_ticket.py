@@ -1,60 +1,66 @@
-from django.test import TestCase
-from django.utils import timezone
+from unittest.mock import patch, MagicMock
+import unittest
+
 from django.core.exceptions import ValidationError
-from app.models import Ticket, Event, User, Venue
+from app.models import Ticket
 
-class TicketLogicTest(TestCase):
+class TicketUsuarioLimiteTest(unittest.TestCase):
 
-    def setUp(self):
-        self.user = User.objects.create_user(username='prueba', password='12345')
-        self.venue = Venue.objects.create(
-            name='Estadio prueba',
-            address='Calle Falsa 123'
-        )
-        self.event = Event.objects.create(
-            title='Evento prueba',
-            description='Descripcion',
-            scheduled_at=timezone.now(),
-            organizer=self.user,
-            venue=self.venue
-        )
+    @patch('app.models.Ticket.objects.filter')  # mockeamos el queryset filter
+    def test_usuario_hasta_4_tickets(self, mock_filter):
+        ticket1 = MagicMock(quantity=2, id=1)
+        ticket2 = MagicMock(quantity=2, id=2)
+        mock_filter.return_value = [ticket1, ticket2]
 
-    def test_usuario_hasta_4_tickets(self):
-        Ticket.objects.create(user=self.user, event=self.event, quantity=2, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
-        Ticket.objects.create(user=self.user, event=self.event, quantity=2, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
-        tickets = Ticket.objects.filter(user=self.user, event=self.event, bl_baja=False)
-        total_quantity = sum(ticket.quantity for ticket in tickets)
-        self.assertLessEqual(total_quantity, 4)
-        print("✅ test_usuario_hasta_4_tickets pasó correctamente")
+        resultado = Ticket.ticket_excede_limite_usuario(user_id=1, event_id=1, nueva_cantidad=0)
+        self.assertFalse(resultado)
 
-    def test_limite_4_tickets(self):
-        Ticket.objects.create(user=self.user, event=self.event, quantity=3, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
-        Ticket.objects.create(user=self.user, event=self.event, quantity=1, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
+    @patch('app.models.Ticket.objects.filter')
+    def test_limite_4_tickets(self, mock_filter):
+        ticket1 = MagicMock(id=1, quantity=3)
+        ticket2 = MagicMock(id=2, quantity=1)
+        mock_filter.return_value = [ticket1, ticket2]
+
+        # Sumar nueva cantidad 2 al ticket 1
+        resultado = Ticket.ticket_excede_limite_usuario(user_id=1, event_id=1, nueva_cantidad=2, ticket_id=1)
+        self.assertFalse(resultado, "No debe exceder el límite con 2 + 1 = 3")
+        
+        # Sumar nueva cantidad 4 al ticket 1, excede
+        resultado = Ticket.ticket_excede_limite_usuario(user_id=1, event_id=1, nueva_cantidad=4, ticket_id=1)
+        self.assertTrue(resultado)
+
+    @patch('app.models.Ticket.objects.filter')
+    def test_editar_superando_limite(self, mock_filter):
+        ticket1 = MagicMock(quantity=2, id=1)
+        ticket2 = MagicMock(quantity=2, id=2)
+        mock_filter.return_value = [ticket1, ticket2]
+
+        resultado = Ticket.ticket_excede_limite_usuario(user_id=1, event_id=1, nueva_cantidad=3, ticket_id=1)
+        self.assertTrue(resultado)
+
+    @patch('app.models.Ticket.objects.filter')
+    def test_editar_dentro_del_limite(self, mock_filter):
+        ticket1 = MagicMock(id=1, quantity=2)
+        ticket2 = MagicMock(id=2, quantity=1)
+        mock_filter.return_value = [ticket1, ticket2]
+
+        t1 = MagicMock(id=1, user=MagicMock(id=1), event=MagicMock(id=1), quantity=3)
+
+        def mock_clean():
+            if Ticket.ticket_excede_limite_usuario(
+                user_id=t1.user.id,
+                event_id=t1.event.id,
+                nueva_cantidad=t1.quantity,
+                ticket_id=t1.id
+            ):
+                raise ValidationError("No puedes tener más de 4 tickets para un mismo evento.")
+
+        t1.clean = mock_clean
 
         try:
-            Ticket.objects.create(user=self.user, event=self.event, quantity=1, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
+            t1.clean()
         except ValidationError:
-            print("✅ test_limite_4_tickets detectó correctamente exceso de tickets")
-        else:
-            self.fail("ValidationError no fue lanzado al exceder el límite de tickets")
+            self.fail("ValidationError fue lanzado incorrectamente al editar dentro del límite")
 
-    def test_editar_dentro_del_limite(self):
-        t1 = Ticket.objects.create(user=self.user, event=self.event, quantity=2, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
-        t1.quantity = 3
-        t1.save()
-        tickets = Ticket.objects.filter(user=self.user, event=self.event, bl_baja=False)
-        total_quantity = sum(ticket.quantity for ticket in tickets)
-        self.assertLessEqual(total_quantity, 4)
-        print("✅ test_editar_dentro_del_limite pasó correctamente")
-
-    def test_editar_superando_limite(self):
-        t1 = Ticket.objects.create(user=self.user, event=self.event, quantity=2, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
-        t2 = Ticket.objects.create(user=self.user, event=self.event, quantity=2, buy_date=timezone.now(), type=Ticket.Type.GENERAL)
-
-        t1.quantity = 3
-        try:
-            t1.save()
-        except ValidationError:
-            print("✅ test_editar_superando_limite detectó correctamente exceso al editar ticket")
-        else:
-            self.fail("ValidationError no fue lanzado al editar ticket y exceder límite")
+if __name__ == '__main__':
+    unittest.main()

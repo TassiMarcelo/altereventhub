@@ -77,11 +77,38 @@
               </div>
               <div>
                 <h6 class="mb-1 text-muted">Fecha y Hora</h6>
-                <p class="mb-0 fs-7">{{ event.scheduled_at|date:"l, j \\d\\e F \\d\\e Y, H:i" }}</p>
-             {% if event.countdown and not user_is_organizer %}
-              <p class="mb-0 text-muted">
-                Faltan {{ event.countdown.days }} días, {{ event.countdown.hours }} horas y {{ event.countdown.minutes }} minutos para el evento.
-              </p>
+        <p class="mb-0 fs-7">{{ event.scheduled_at|date:"l, j \\d\\e F \\d\\e Y, H:i" }}</p>
+       {% if event.countdown and not user_is_organizer %}
+        <p class="mb-0 text-muted" id="countdown-text">
+    Cargando countdown...
+</p>
+
+<script>
+    const eventId = {{ event.id }};
+    const countdownText = document.getElementById("countdown-text");
+
+    function actualizarCountdown() {
+        fetch(`/event/${eventId}/countdown/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    countdownText.innerText = "No se pudo obtener el countdown.";
+                    return;
+                }
+                const { days, hours, minutes } = data;
+                if (days === 0 && hours === 0 && minutes === 0) {
+                    countdownText.innerText = "¡El evento ya comenzó!";
+                } else {
+                    countdownText.innerText = `Faltan ${days} días, ${hours} horas y ${minutes} minutos para el evento.`;
+                }
+            })
+            .catch(() => {
+                countdownText.innerText = "Error al cargar el countdown.";
+            });
+    }
+    setInterval(actualizarCountdown, 60000); 
+    actualizarCountdown(); 
+</script>
               {% endif %}
               </div>
               </div>

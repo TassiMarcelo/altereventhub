@@ -35,8 +35,9 @@ class BaseE2ETest(StaticLiveServerTestCase):
         # Cerrar la página después de cada test
         self.page.close()
 
-    def create_test_user(self,username="usuario_test",password="usuario_test",email="test@example.com", is_organizer=False):
+    def create_test_user(self,username="usuario_test",password="password123",email="test@example.com", is_organizer=False):
         """Crea un usuario de prueba en la base de datos"""
+        User.objects.filter(username=username).delete()
         user =  User.objects.create_user(
             username=username,
             email=email,
@@ -47,27 +48,27 @@ class BaseE2ETest(StaticLiveServerTestCase):
         return user
     
 
-    def create_test_category(self):
+    def create_test_category(self,name="Musica"):
         return Category.objects.create(
-            name="Música",
+            name=name,
             description="Eventos relacionados con conciertos y festivales.",
             is_active=True
         )
     
-    def create_test_venue(self,capacity:int):
+    def create_test_venue(self,capacity:int,name="Estadio Central"):
         return Venue.objects.create(
-            name="Estadio Central",
+            name=name,
             address="Av. Siempre Viva 123",
             city="Springfield",
             capacity=capacity,
             contact="contacto@estadiocentral.com"
         )
     
-    def create_test_event(self,organizer,venue):
+    def create_test_event(self,organizer,venue,scheduled_at=timezone.now() + timezone.timedelta(days=30),title="Festival de Jazz"):
         return Event.objects.create(
-        title="Festival de Jazz",
+        title=title,
         description="Un evento musical imperdible.",
-        scheduled_at=timezone.now() + timezone.timedelta(days=30),
+        scheduled_at=scheduled_at,
         organizer=organizer,
         venue=venue,
         status=Event.Status.ACTIVO

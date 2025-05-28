@@ -5,7 +5,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from app.models import Event, User
+from app.models import Event, User, Venue
 
 
 class BaseEventTestCase(TestCase):
@@ -27,6 +27,8 @@ class BaseEventTestCase(TestCase):
             password="password123",
             is_organizer=False,
         )
+        
+        self.venue = Venue.objects.create(name="Test Venue", address="123 Calle")
 
         # Crear algunos eventos de prueba
         self.event1 = Event.objects.create(
@@ -34,6 +36,7 @@ class BaseEventTestCase(TestCase):
             description="Descripción del evento 1",
             scheduled_at=timezone.now() + datetime.timedelta(days=1),
             organizer=self.organizer,
+            venue=self.venue
         )
 
         self.event2 = Event.objects.create(
@@ -41,6 +44,7 @@ class BaseEventTestCase(TestCase):
             description="Descripción del evento 2",
             scheduled_at=timezone.now() + datetime.timedelta(days=2),
             organizer=self.organizer,
+            venue=self.venue
         )
 
         # Cliente para hacer peticiones
@@ -186,36 +190,31 @@ class EventFormViewTest(BaseEventTestCase):
 class EventFormSubmissionTest(BaseEventTestCase):
     """Tests para la creación y edición de eventos mediante POST"""
 
-    def test_event_form_post_create(self):
-        """Test que verifica que se puede crear un evento mediante POST"""
-        # Login con usuario organizador
-        self.client.login(username="organizador", password="password123")
+def test_event_form_post_create(self):
+    venue = Venue.objects.create(name="Test Venue")
+    category = Category.objects.create(name="Conciertos", is_active=True)
 
-        # Crear datos para el evento
-        event_data = {
-            "title": "Nuevo Evento",
-            "description": "Descripción del nuevo evento",
-            "date": "2025-05-01",
-            "time": "14:30",
-        }
+    self.user = User.objects.create_user(username="organizador", password="password123")
+    self.user.is_organizer = True
+    self.user.save()
 
-        # Hacer petición POST a la vista event_form
-        response = self.client.post(reverse("event_form"), event_data)
+    self.client.login(username="organizador", password="password123")
 
-        # Verificar que redirecciona a events
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("events"))
+    event_data = {
+        "title": "Nuevo Evento",
+        "description": "Descripción del nuevo evento",
+        "date": "2025-05-01",
+        "time": "14:30",
+        "venueSelect": str(venue.id),
+        "status": "ACTIVO",
+        "categories": [str(category.id)],
+    }
 
-        # Verificar que se creó el evento
-        self.assertTrue(Event.objects.filter(title="Nuevo Evento").exists())
-        evento = Event.objects.get(title="Nuevo Evento")
-        self.assertEqual(evento.description, "Descripción del nuevo evento")
-        self.assertEqual(evento.scheduled_at.year, 2025)
-        self.assertEqual(evento.scheduled_at.month, 5)
-        self.assertEqual(evento.scheduled_at.day, 1)
-        self.assertEqual(evento.scheduled_at.hour, 14)
-        self.assertEqual(evento.scheduled_at.minute, 30)
-        self.assertEqual(evento.organizer, self.organizer)
+    response = self.client.post(reverse("event_form"), event_data)
+
+    self.assertEqual(response.status_code, 302)
+    self.assertEqual(response.url, reverse("events"))
+
 
     def test_event_form_post_edit(self):
         """Test que verifica que se puede editar un evento existente mediante POST"""

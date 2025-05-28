@@ -23,7 +23,7 @@ class TicketModelTest(BaseE2ETest):
         #self.page.screenshot(path="screenshot.png") # Usar screenshot para debug
         
 
-        self.page.goto(f"{self.live_server_url}/ticket/1/form/") # Ir a la compra de entradas para evento con id 1
+        self.page.goto(f"{self.live_server_url}/ticket/{event.id}/form/") # Ir a la compra de entradas para el evento
 
         # Rellenar el formulario
         self.page.select_option("select[name='type']", "GENERAL")

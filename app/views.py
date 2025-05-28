@@ -161,8 +161,11 @@ def event_form(request, id=None):
             Event.new(title, description,venue, scheduled_at, request.user, selected_categories)
         else:
             event = get_object_or_404(Event, pk=id)
-            event.update(title, description,venue,status, scheduled_at, request.user, selected_categories)
-
+            try:
+                event.update(title, description,venue,status, scheduled_at, request.user, selected_categories)
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect("event_edit", id=id)
         return redirect("events")
 
     event = None

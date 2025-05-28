@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -241,34 +242,67 @@ class Ticket(models.Model):
         choices=Type.choices,
         default=Type.GENERAL,
     )
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="tickets") # Desde evento, podemos acceder a los tickets gracias a related_name
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="tickets")
     buy_date = models.DateTimeField()
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tickets") # El usuario comprador del evento
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tickets")
     ticket_code = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    bl_baja = models.BooleanField(default=False) # Campo para el borrado lógico
+    bl_baja = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return str(self.ticket_code)
-    
     @classmethod
-    def new(cls, buy_date, quantity, type, event, user): # Alta
+    def ticket_excede_limite_usuario(cls, user_id, event_id, nueva_cantidad, ticket_id=None):
+        tickets = cls.objects.filter(user_id=user_id, event_id=event_id, bl_baja=False)
+        total = 0
+        for t in tickets:
+            if ticket_id and t.id == ticket_id:
+                total += nueva_cantidad
+            else:
+                total += t.quantity
+        return total > 4
 
-        # Asociar al comprador (User) y al evento (Event)
-        ticket = cls.objects.create(
+
+    def clean(self):
+    # Usar el método para validar el límite
+        if self.ticket_excede_limite_usuario(
+            user_id=self.user.id,
+            event_id=self.event.id,
+            nueva_cantidad=self.quantity,
+            ticket_id=self.pk
+        ):
+            raise ValidationError("No puedes tener más de 4 tickets para un mismo evento.")
+
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Esto llama a clean() y levanta ValidationError si no pasa la validación
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def new(cls, buy_date, quantity, type, event, user):
+        ticket = cls(
             buy_date=buy_date,
             quantity=quantity,
             type=type,
             event=event,
             user=user
-            )
+        )
+        ticket.save()
         return ticket
 
-    def update(self, buy_date=None, quantity=None, type=None, event=None, user=None): # Modificación
-        self.quantity = quantity or self.quantity
-        self.type = type or self.type
+    def update(self, buy_date=None, quantity=None, type=None, event=None, user=None):
+        if buy_date is not None:
+            self.buy_date = buy_date
+        if quantity is not None:
+            self.quantity = quantity
+        if type is not None:
+            self.type = type
+        if event is not None:
+            self.event = event
+        if user is not None:
+            self.user = user
         self.save()
 
-    def soft_delete(self): # Baja lógica
+    def soft_delete(self):
         self.bl_baja = True
         self.save()
 

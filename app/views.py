@@ -206,48 +206,51 @@ def ticket_delete(request,ticket_code):
     return redirect("events")
 
 
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Sum
+from django.contrib.auth.decorators import login_required
+
 @login_required
 def ticket_edit(request, ticket_code):
+    ticket = get_object_or_404(Ticket, ticket_code=ticket_code, user=request.user)
+
     if request.method == "POST":
         quantity = request.POST.get("quantity")
         type = request.POST.get("type")
-        
+
         try:
             quantity = int(quantity)
             if quantity <= 0:
                 raise ValueError
         except ValueError:
             messages.error(request, "La cantidad debe ser un número entero positivo.")
-            return redirect("ticket_edit_form", ticket_code=ticket_code)
+            # Renderizar formulario con errores y valores previos
+            return render(request, "app/ticket_edit_form.html", {"ticket": ticket, "quantity": quantity, "type": type})
 
         if type not in Ticket.Type.values:
             messages.error(request, "El tipo de ticket no es válido.")
-            return redirect("ticket_edit_form", ticket_code=ticket_code)
+            return render(request, "app/ticket_edit_form.html", {"ticket": ticket, "quantity": quantity, "type": type})
 
-        ticket = Ticket.objects.filter(ticket_code=ticket_code, user=request.user).first()
-        if not ticket:
-            messages.error(request, "Ticket no encontrado.")
-            return redirect("tickets")
-
-        # Validar límite de 4 entradas por evento
         total_user_tickets = Ticket.objects.filter(
             user=request.user,
             event=ticket.event,
             bl_baja=0
         ).exclude(id=ticket.id).aggregate(Sum("quantity"))["quantity__sum"] or 0
-        
-        if total_user_tickets + quantity > 4:
-            messages.error(request, f"No puedes tener más de 4 entradas por evento.")
-            return redirect("ticket_edit_form", ticket_code=ticket_code)
 
-        # Actualizar el ticket
+        if total_user_tickets + quantity > 4:
+            messages.error(request, "No puedes tener más de 4 entradas por evento.")
+            return render(request, "app/ticket_edit_form.html", {"ticket": ticket, "quantity": quantity, "type": type})
+
+        # Actualizar ticket
         ticket.quantity = quantity
         ticket.type = type
         ticket.save()
         messages.success(request, "Ticket editado correctamente")
         return redirect("tickets")
 
-    return redirect("tickets")
+    # GET - mostrar formulario con datos actuales
+    return render(request, "app/ticket_edit_form.html", {"ticket": ticket, "quantity": ticket.quantity, "type": ticket.type})
 
 
 def ticket_edit_form(request,ticket_code):
@@ -303,15 +306,14 @@ def ticket_buy(request, eventId):
         ).aggregate(total=Sum("quantity"))["total"] or 0
 
         # Cantidad previa de tickets antes de la compra
-        print(f"Usuario {user.username} ya tiene {total_user_tickets} tickets para evento {event.title}. Intentando comprar {quantity} más.")
+    
 
         if total_user_tickets + quantity > 4:
             messages.error(request, f"No puedes comprar más de 4 entradas por evento.")
-            print(f"Compra rechazada: el usuario quiere comprar {total_user_tickets + quantity}, que supera el límite.")
             return redirect('ticket_form', id=eventId)
 
         # Crear ticket
-        print("Creando ticket...")
+        
         ticket = Ticket.new(
             buy_date=timezone.now(),
             quantity=quantity,
@@ -320,7 +322,7 @@ def ticket_buy(request, eventId):
             user=user
         )
         messages.success(request, f"¡Compra exitosa! Código del ticket: {ticket.ticket_code}")
-        print(f"Ticket comprado! Codigo: {str(ticket.ticket_code)}")
+       
 
         return redirect('ticket_form', id=eventId)
 

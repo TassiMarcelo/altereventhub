@@ -2,16 +2,18 @@
 {% load static %}
 {% block content %}
 
-{% if messages %}
-<script>
-    {% for message in messages %}
-        alert("{{ message|escapejs }}");
-    {% endfor %}
-</script>
-{% endif %}
-
-
 <div class="container mt-5">
+
+    {% if messages %}
+    <div>
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="card shadow-lg">
         <div class="card-header text-center">
             <h2>Editar entrada para "{{ ticket.event.title }}"</h2>
@@ -25,18 +27,18 @@
 
             <form method="POST" action="{% url 'ticket_edit' ticket.ticket_code %}">
                 {% csrf_token %}
-                
+
                 <div class="mb-3">
                     <label for="type" class="form-label">Tipo de Entrada</label>
                     <select class="form-select" id="type" name="type" required>
-                        <option value="GENERAL">General</option>
-                        <option value="VIP">VIP</option>
+                        <option value="GENERAL" {% if type == "GENERAL" %}selected{% endif %}>General</option>
+                        <option value="VIP" {% if type == "VIP" %}selected{% endif %}>VIP</option>
                     </select>
                 </div>
 
                 <div class="mb-3">
                     <label for="quantity" class="form-label">Cantidad</label>
-                    <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                    <input type="number" class="form-control" id="quantity" name="quantity" min="1" required value="{{ quantity }}">
                 </div>
 
                 <hr class="my-4">

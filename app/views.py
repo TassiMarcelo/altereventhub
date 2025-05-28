@@ -23,6 +23,7 @@ from django.db.transaction import atomic
 import logging
 from .forms import RatingForm
 from django.db.models import Avg, Count
+from django.views.decorators.http import require_GET
 
 logger = logging.getLogger(__name__)
 
@@ -182,8 +183,6 @@ def event_form(request, id=None):
         "app/event_form.html",
         {"event": event, "venues":venues,"user_is_organizer": request.user.is_organizer, "categories": categories, "selected_categories": selected_categories},
     )
-
-
 
 
 @login_required
@@ -865,4 +864,18 @@ def category_events(request, id):
     category = get_object_or_404(Category, id=id)
     events = category.events_categories.all()
     return render(request, "app/category_events.html", {"category": category, "events": events})
-        
+
+@login_required
+@require_GET
+def countdown_json(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+
+    if request.user.is_organizer:
+        return JsonResponse({'error': 'Los organizadores no pueden ver el countdown.'}, status=403)
+
+    countdown = event.countdown
+    return JsonResponse({
+        'days': countdown['days'],
+        'hours': countdown['hours'],
+        'minutes': countdown['minutes']
+    })

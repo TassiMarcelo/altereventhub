@@ -85,6 +85,9 @@ class TicketModelTest(BaseE2ETest):
         self.page.wait_for_selector("select[name='type']")
         
         # Completar formulario
+        self.page.goto(f"{self.live_server_url}/ticket/{event.id}/form/") # Ir a la compra de entradas para el evento
+
+        # Rellenar el formulario
         self.page.select_option("select[name='type']", "GENERAL")
         self.page.fill("input[name='quantity']", "2")
         self.page.fill("input[name='card_number']", "1234 5678 9012 3456")

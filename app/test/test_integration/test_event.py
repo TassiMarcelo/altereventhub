@@ -5,7 +5,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from app.models import Event, User, Venue
+from app.models import Event, User, Venue, Category
 
 
 class BaseEventTestCase(TestCase):
@@ -330,3 +330,83 @@ class EventDeleteViewTest(BaseEventTestCase):
 
         # Verificar que el evento sigue existiendo
         self.assertTrue(Event.objects.filter(pk=self.event1.id).exists())
+        
+class EventIntegrationTestStatus(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="organizer", password="password123")
+        self.user.is_organizer = True
+        self.user.save()
+
+        self.venue = Venue.objects.create(name="Lugar Test", address="Dirección", city="Ciudad", capacity=100, contact="email@ejemplo.com")
+
+    def test_create_event_with_status(self):
+        self.client.login(username="organizer", password="password123")
+
+        scheduled_at = (timezone.now() + timedelta(days=2)).strftime("%Y-%m-%d")
+        scheduled_time = (timezone.now() + timedelta(days=2)).strftime("%H:%M")
+        category = Category.objects.create(name="Categoria de prueba", description="Descripcion", is_active=True)
+
+        response = self.client.post(reverse('event_form'), {
+            'title': 'Evento de prueba',
+            'description': 'Descripción',
+            'date': scheduled_at,
+            'time': scheduled_time,
+            'venueSelect': self.venue.id,
+            'categories': [category.id],  
+        })
+
+        self.assertEqual(response.status_code, 302)  
+        event = Event.objects.last()
+        self.assertIsNotNone(event)
+        self.assertEqual(event.status, Event.Status.ACTIVO)
+
+    def test_cannot_reactivate_finaliado_event(self):
+        self.client.login(username="organizer", password="password123")
+        category = Category.objects.create(name="Test Cat", description="Desc", is_active=True)
+        scheduled_at = timezone.now() + timedelta(days=2)
+
+        # Crear el evento (quedará como ACTIVO por defecto)
+        response_create = self.client.post(reverse('event_form'), {
+            'title': 'Evento Prueba',
+            'description': 'Descripción',
+            'date': scheduled_at.strftime("%Y-%m-%d"),
+            'time': scheduled_at.strftime("%H:%M"),
+            'venueSelect': self.venue.id,
+            'categories': [category.id],
+        })
+
+        event = Event.objects.last()
+        self.assertEqual(event.status, Event.Status.ACTIVO)
+        self.assertEqual(response_create.status_code, 302)  
+        event = Event.objects.last()
+
+        # Primer update: cambiar estado a FINALIZADO
+        response_cancel = self.client.post(reverse('event_edit', args=[event.id]), {
+            'title': event.title,
+            'description': event.description,
+            'date': scheduled_at.strftime("%Y-%m-%d"),
+            'time': scheduled_at.strftime("%H:%M"),
+            'venueSelect': self.venue.id,
+            'status': Event.Status.FINALIZADO,
+            'categories': [category.id],
+        })
+        
+        event.refresh_from_db()
+        self.assertEqual(event.status, Event.Status.FINALIZADO)
+        self.assertEqual(response_cancel.status_code, 302)
+         # Segundo update: cambiar estado a ACTIVO
+        response_reactivate = self.client.post(reverse('event_edit', args=[event.id]), {
+            'title': event.title,
+            'description': event.description,
+            'date': scheduled_at.strftime("%Y-%m-%d"),
+            'time': scheduled_at.strftime("%H:%M"),
+            'venueSelect': self.venue.id,
+            'status': Event.Status.ACTIVO,
+            'categories': [category.id],
+        })
+
+        event.refresh_from_db()
+        # Verificamos que no se haya podido cambiar el estado
+        self.assertEqual(event.status, Event.Status.FINALIZADO)
+        self.assertEqual(response_reactivate.status_code, 302)
+        

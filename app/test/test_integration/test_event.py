@@ -331,6 +331,7 @@ class EventDeleteViewTest(BaseEventTestCase):
 
         # Verificar que el evento sigue existiendo
         self.assertTrue(Event.objects.filter(pk=self.event1.id).exists())
+        
 class EventIntegrationTestStatus(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="organizer", password="password123")

@@ -5,6 +5,9 @@ import uuid
 from django.utils import timezone
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db.models import Avg
+import re
+from app.utils import calculate_average_rating
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)
@@ -36,17 +39,40 @@ class Category(models.Model):
     is_active = models.BooleanField(default=True)
     events = models.ManyToManyField("Event", related_name="category_events", blank=True)
     
-    def clean(self):
-        if not self.name.strip():
-            raise ValidationError("El nombre de la categoria no puede estar vacio")
+    @classmethod
+    def validateCategory(cls, name, description=None, category_id=None):
+        error = {}
 
-        existing = Category.objects.filter(name=self.name, is_active=True)
-        if self.pk:
-            existing = existing.exclude(pk=self.pk) 
+        if not name or not name.strip():  # verifica que se escriba algo y no este en blanco o tenga un espacio
+            error["name"]= "El nombre de la categoria no puede estar vacio"  
 
-        if self.is_active and existing.exists():
-            raise ValidationError("El nombre de la categoria ya existe")
+        existing = cls.objects.filter(name=name.strip()) #Para poder editar sin que tome que el nombre de la categoria ya existe
+        if category_id:
+            existing = existing.exclude(pk=category_id)
+        if existing.exists():
+            
+            error["name"]= "El nombre de la categoria ya existe"
 
+        if not description or not description.strip():
+            error["description"]= "Ingrese la descripcion de la categoria"
+        elif not re.match(r'^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]+$', description.strip()):
+            error["description"]= "La descripcion solo puede contener letras y numeros"
+
+        return error
+
+    @classmethod
+    def newCategory(cls,name, description=None, is_active=True):
+        errors =cls.validateCategory(name, description)
+        if len(errors) > 0:
+            return False, errors
+        
+        category = cls.objects.create(
+            name=name.strip(),
+            description=description.strip() if description else "", #nos ayuda a no crear una categoria sin descripcion
+            is_active=is_active
+        )
+        return True, None
+        
     def __str__(self):
         return self.name    
 
@@ -114,6 +140,10 @@ class Event(models.Model):
     def __str__(self):
         return self.title
 
+    def average_rating(self):
+        filtered_ratings = self.rating_set.filter(bl_baja=False, is_current=True)
+        return calculate_average_rating(filtered_ratings)
+    
     @classmethod
     def validate(cls, title, description,venue,scheduled_at, categories=None):
         errors = {}
@@ -136,6 +166,24 @@ class Event(models.Model):
     @property
     def active_tickets(self):
         return self.tickets.filter(bl_baja=False)
+
+    @property
+    def countdown(self):
+        now = timezone.now()
+        if self.scheduled_at <= now:
+            return {'days': 0, 'hours': 0, 'minutes': 0}
+
+        delta: timedelta = self.scheduled_at - now
+        total_seconds = int(delta.total_seconds())
+        days = total_seconds // 86400
+        hours = (total_seconds % 86400) // 3600
+        minutes = (total_seconds % 3600) // 60
+
+        return {
+            'days': days,
+            'hours': hours,
+            'minutes': minutes
+        }
 
     @classmethod
     def new(cls, title, description,venue, scheduled_at, organizer, categories=None):
@@ -283,30 +331,30 @@ class RefundRequest(models.Model):
     def __str__(self):
         return f"Refund {self.ticket_code}"
 
-    @classmethod
-    def validate(cls, ticket_code, reason):
+    def clean(self):
         errors = {}
+        if not self.ticket_code.strip():
+            errors["ticket_code"] = "Ingrese el código del ticket"
+        if not self.reason.strip():
+            errors["reason"] = "Seleccione un motivo válido"
 
-        if ticket_code == "":
-            errors["ticket_code"] = "Por favor ingrese el código del ticket"
-        if reason == "":
-            errors["reason"] = "Por favor ingrese el motivo del reembolso"
-
-        return errors
+        if errors:
+            raise ValidationError(errors)
 
     @classmethod
     def new(cls, ticket_code, reason, details, requester):
-        errors = cls.validate(ticket_code, reason)
-        if errors:
-            return False, errors
-
-        cls.objects.create(
+        refund = cls(
             ticket_code=ticket_code,
             reason=reason,
             details=details,
             requester=requester,
         )
-        return True, None
+        try:
+            refund.full_clean()
+            refund.save()
+            return True, None
+        except ValidationError as e:
+            return False, e.message_dict
 
     def approve(self):
         self.status = self.Status.APPROVED
@@ -324,29 +372,48 @@ class RefundRequest(models.Model):
         if reason:
             self.reason = reason
         self.save()
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()  
+        super().save(*args, **kwargs)
+
 
 
 class Rating(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    event = models.ForeignKey('Event', on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     text = models.TextField(blank=True)
-    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    rating = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     bl_baja = models.BooleanField(default=False)
     is_current = models.BooleanField(default=True)
 
     class Meta:
         constraints = [
-        models.UniqueConstraint(
-            fields=['user', 'event'],
-            condition=models.Q(is_current=True, bl_baja=False),
-            name='unique_active_rating_per_user_event'
-        )
-    ]
-    #Eliminacion logica
+            models.UniqueConstraint(
+                fields=['user', 'event'],
+                condition=models.Q(is_current=True, bl_baja=False),
+                name='unique_active_rating_per_user_event'
+            )
+        ]
+
+    @classmethod
+    def newRating(cls, user, event, title, rating, text=None):
+        try:
+            cls.objects.create(
+                user=user,
+                event=event,
+                title=title,
+                rating=rating,
+                text=text or ''
+            )
+            return True, None
+        except Exception as e:
+            return False, {'db_error': str(e)}
+
     def soft_delete(self):
-        """Marcar como eliminado lógicamente"""
+        """Eliminación lógica sin validaciones"""
         self.bl_baja = True
         self.is_current = False
         self.save()

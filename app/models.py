@@ -452,4 +452,12 @@ class Rating(models.Model):
         self.is_current = False
         self.save()
 
-   
+class SatisfactionSurvey(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    ticket = models.OneToOneField(Ticket, on_delete=models.CASCADE)
+    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.ticket.ticket_code} - {self.rating}"

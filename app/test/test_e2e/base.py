@@ -81,3 +81,23 @@ class BaseE2ETest(StaticLiveServerTestCase):
         self.page.get_by_label("Usuario").fill(username)
         self.page.get_by_label("Contraseña").fill(password)
         self.page.click("button[type='submit']")
+
+    def create_test_ticket(self, user=None, event=None, quantity=1, type="GENERAL"):
+        """Crea un ticket de prueba en la DB para usar en tests"""
+        if user is None:
+            user = self.create_test_user()
+        if event is None:
+            organizer = self.create_test_user(is_organizer=True)
+            venue = self.create_test_venue(100)
+            event = self.create_test_event(organizer, venue)
+
+        from app.models import Ticket
+
+        ticket = Ticket.new(
+            buy_date=timezone.now(),
+            quantity=quantity,
+            type=type,
+            event=event,
+            user=user
+        )
+        return ticket

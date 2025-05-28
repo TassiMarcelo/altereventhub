@@ -17,11 +17,11 @@ from .models import Rating
 from django.core.exceptions import ValidationError
 from .models import Event, User,Category
 from django.db.models import Count
-from .models import Venue
+from .models import Venue, SatisfactionSurvey
 from django.db import IntegrityError
 from django.db.transaction import atomic
 import logging
-from .forms import RatingForm
+from .forms import RatingForm, SatisfactionSurveyForm
 from django.db.models import Avg, Count
 from django.views.decorators.http import require_GET
 
@@ -324,7 +324,7 @@ def ticket_buy(request, eventId):
         messages.success(request, f"¡Compra exitosa! Código del ticket: {ticket.ticket_code}")
        
 
-        return redirect('ticket_form', id=eventId)
+        return redirect('satisfaction_survey', ticket_code=ticket.ticket_code)
 
     messages.error(request, "Método no permitido.")
     return redirect('ticket_form', id=eventId)
@@ -879,3 +879,26 @@ def countdown_json(request, event_id):
         'hours': countdown['hours'],
         'minutes': countdown['minutes']
     })
+
+#Encuesta de compra
+@login_required
+def satisfaction_survey(request, ticket_code):
+    ticket = get_object_or_404(Ticket, ticket_code=ticket_code, user=request.user)
+
+    if hasattr(ticket, "satisfactionsurvey"):
+        messages.info(request, "Ya completaste la encuesta para este ticket")
+        return redirect("tickets")
+
+    if request.method == "POST":
+        form = SatisfactionSurveyForm(request.POST)
+        if form.is_valid():
+            survey = form.save(commit=False)
+            survey.user = request.user
+            survey.ticket =ticket
+            survey.save()
+            messages.success(request, "¡Gracias por contestar la encuesta!")
+            return redirect("tickets")
+    else:
+        form = SatisfactionSurveyForm()
+    return render(request, "survey/satisfaction_form.html", {"form": form, "ticket":ticket})
+        

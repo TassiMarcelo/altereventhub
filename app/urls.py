@@ -60,4 +60,7 @@ urlpatterns = [
     path("venue/<int:id>/edit/", views.venue_form, name="venue_edit"),
     path("venue/<int:id>/", views.venue_detail, name="venue_detail"),
 
+# encuesta
+    path("survey/<str:ticket_code>/", views.satisfaction_survey, name="satisfaction_survey"),
+
 ]

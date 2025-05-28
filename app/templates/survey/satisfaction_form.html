@@ -1,0 +1,43 @@
+{% extends "base.html"%}
+{% if messages %}
+<script>
+    {% for message in messages %}
+        alert("{{ message|escapejs }}");
+    {% endfor %}
+</script>
+{% endif %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="card-title mb-4 text-center">
+                <h1>Encuesta de Satisfaccion</h1>
+                <p>Ticket: <strong>{{ ticket.ticket_code }}</strong></p>  
+                <p>Por favor, califique su experiencia. Tu opinion nos ayuda a mejorar.</p>
+            <div>
+            
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label for="id_rating" class="form-label">{{ form.rating.label }}</label>
+                    {{ form.rating }}
+                    {% if form.rating.errors %}
+                        <div class="invalid-feedback d-block">{{ form.rating.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="id_comment" class="form-label">{{ form.comment.label }}</label>
+                    {{ form.comment }}
+                    {% if form.comment.errors %}
+                        <div class="invalid-feedback d-block">{{ form.comment.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Enviar</button>
+            </form>
+        </div>
+    </div>
+</div>              
+{% endblock %}

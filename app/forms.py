@@ -1,5 +1,5 @@
 from django import forms
-from .models import Comment,Rating
+from .models import Comment,Rating,SatisfactionSurvey
 
 class CommentForm(forms.ModelForm):
     PALABRAS_PROHIBIDAS = ["nefasto", "tonto"]  
@@ -54,3 +54,18 @@ class RatingForm(forms.ModelForm):
         if text is None or text == '':
             return ''
         return text
+
+class SatisfactionSurveyForm(forms.ModelForm):
+    class Meta:
+        model = SatisfactionSurvey
+        fields = ["rating", "comment"]
+        labels = {
+            "rating": "Puntuacion",
+            "comment": "Comentario",
+        }
+        widgets = {
+            "rating": forms.Select(choices=[(i,i) for i in range(1,6)],
+            attrs={"class": "form-select"}
+            ),
+            "comment": forms.Textarea(attrs={"rows":4, "class": "form-control"}),
+        }

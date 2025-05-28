@@ -50,6 +50,7 @@ urlpatterns = [
     path('event/<int:event_id>/rating/<int:rating_id>/update/', views.update_rating, name='update_rating'),
     path('event/<int:event_id>/rating/<int:rating_id>/delete/', views.delete_rating, name='delete_rating'),
     path('event/<int:event_id>/ratings/', views.list_ratings, name='list_ratings'),
+    path('event/<int:event_id>/countdown/', views.countdown_json, name='countdown_json'),
 
 
 ## Venue

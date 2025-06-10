@@ -1,0 +1,49 @@
+name: Integracion continua
+
+#en esta parte indicamos en que momento se dispara este ci, en este caso cuando se realiza un push, en main o en develop y cuando hay una pull requet en cualquier rama
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+
+#los job se pueden ejecutar de manera secuencial o paralelo 
+jobs: 
+#en build compilacion de app
+  build:
+    name: Build
+    runs-on: ubuntu-latest #esto es como una maquina virtual temporal donde se va a ejecutar
+    #steps son los pasos a ejecutarse en este trabajo
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install production dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+  unit_integration_tests:
+    name: Unit and Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run unit and integration tests
+        run: python manage.py test app/test/test_unit app/test/test_integration

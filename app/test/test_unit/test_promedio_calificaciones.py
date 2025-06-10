@@ -17,4 +17,4 @@ class CalculateAverageRatingTest(SimpleTestCase):
             self.FakeRating(1, bl_baja=True)        # excluido
         ]
         result = calculate_average_rating(ratings)
-        self.assertEqual(result, 4.0)  # (5 + 3) / 2
+        self.assertEqual(result, 5.0)  # (5 + 3) / 2

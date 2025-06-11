@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.contrib.messages import get_messages
 from django.utils import timezone
 from app.models import *
 import datetime
@@ -159,3 +160,91 @@ class TicketModelTest(TestCase):
 
         # Verificamos la lógica
         self.assertTrue(capacidad_utilizada + nueva_cantidad > capacidad_maxima)
+
+class TicketReembolsoTest(TestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            username="usuario_test",
+            email="usuario@example.com",
+            password="password123",
+            is_organizer=False,
+        )
+
+        self.userOrganizer = User.objects.create_user(
+            username="organizador_test",
+            email="organizador@example.com",
+            password="password123",
+            is_organizer=True,
+        )
+            
+        self.venue = Venue.objects.create(
+            name="Estadio Central",
+            address="Av. Siempre Viva 123",
+            city="Springfield",
+            capacity=100,
+            contact="contacto@estadiocentral.com"
+        )
+
+        self.category = Category.objects.create(
+            name="Música",
+            description="Eventos relacionados con conciertos y festivales.",
+            is_active=True
+        )
+
+        self.event = Event.objects.create(
+            title="Festival de Jazz",
+            description="Un evento musical imperdible.",
+            scheduled_at=timezone.now() + timezone.timedelta(days=30),
+            organizer=self.userOrganizer,
+            venue=self.venue,
+            status=Event.Status.ACTIVO
+        )
+
+        self.ticket = Ticket.objects.create(
+            quantity=2,
+            type=Ticket.Type.VIP,
+            event=self.event,
+            buy_date=timezone.now(),
+            user=self.user
+        )
+
+        self.RefundRequest = RefundRequest.objects.create(
+            ticket_code=str(self.ticket.ticket_code),  
+            reason='no_asistencia',
+            requester=self.user
+        )
+
+        return super().setUp()
+    
+    def test_ticket_reembolso_unico(self):
+        # Arrange
+        # Iniciar sesion (el usuario ya tenia un reembolso activo de entrada)
+        self.client.login(username="usuario_test", password="password123")
+        url = reverse("solicitar_reembolso")
+        data = {
+            "ticket_code": str(self.ticket.ticket_code),
+            "reason": "no_asistencia",
+            "details": "no puedo asistir al evento. porfavor reembolsenme!"
+        }
+
+        # Act
+        # Hacemos la solicitud al servidor
+        response = self.client.post(url, data, follow=True)
+
+        # Assert
+        # Verificar status OK
+        self.assertEqual(response.status_code, 200)
+
+        # Verificar que no se creó la nueva solicitud de rembolso
+        reembolsos = RefundRequest.objects.filter(requester=self.user)        
+        self.assertEqual(reembolsos.count(), 1)
+
+        # Verificar que el mensaje de error fue agregado
+        messages = list(get_messages(response.wsgi_request))
+        print(messages)
+        self.assertTrue(any("Ya hay una solicitud de reembolso pendiente." in str(m) for m in messages))
+
+        # Verificar que se redirige al formulario
+        self.assertTemplateUsed(response, "request_form.html")
+
+        

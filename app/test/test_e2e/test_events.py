@@ -310,63 +310,73 @@ class EventCRUDTest(EventBaseTest):
         # Verificar que el evento eliminado ya no aparece en la tabla
         expect(self.page.get_by_text("Evento de prueba 1")).to_have_count(0)
 
-class EventTeste2eStatus(TestCase):
+class EventTeste2eStatus(BaseE2ETest):
     def setUp(self):
         # Crear usuario organizador y hacer login
-        self.user = User.objects.create_user(username="organizer", password="password123")
+        super().setUp()
+        self.user=self.create_test_user(username="marcelo",password="password123")
+        #self.user = User.objects.create_user(username="organizer", password="password123")
         self.user.is_organizer = True
         self.user.save()
-        self.client.login(username="organizer", password="password123")
+        self.login_user(username="marcelo", password="password123")
+
 
     def test_change_status_completed_rejected(self):
-        self.client.login(username="organizer", password="password123")
+
         self.venue = Venue.objects.create(name="Test Venue", address="123 Street")
         self.category = Category.objects.create(name="Test Cat", description="Desc", is_active=True)
-        scheduled_at = timezone.now() + timedelta(days=2)
 
-        # Crear evento (status por defecto ACTIVO)
-        response_create = self.client.post(reverse('event_form'), {
-            'title': 'Evento Prueba',
-            'description': 'Descripción',
-            'date': scheduled_at.strftime("%Y-%m-%d"),
-            'time': scheduled_at.strftime("%H:%M"),
-            'venueSelect': self.venue.id,
-            'categories': [self.category.id],
-        })
+        #Rediriguimios a eventos.
+        self.page.goto(f"{self.live_server_url}/events/")
+      
+        # Esperar a que cargue el botón y hacer clic
+        self.page.get_by_role("link", name="Crear Evento").click()
+        
+         # Completar formulario de eventos.
+        self.page.fill('input[name="title"]', "Evento de Prueba")
+        self.page.fill('textarea[name="description"]', "Este evento fue creado por Playwright.")
+        self.page.select_option('select[name="venueSelect"]', str(self.venue.id))
+        self.page.fill('input[name="date"]', "2025-12-31")
+        self.page.fill('input[name="time"]', "20:00")    
+        self.page.check(f'input[name="categories"][value="{self.category.id}"]')
+        
+        # Enviar formulario
+        self.page.get_by_role("button", name="Crear Evento").click()
 
-        self.assertEqual(response_create.status_code, 302)  # Redirige al crear evento exitosamente
+ 
+        # Buscar el primer botón "Editar"
+        primer_boton_editar = self.page.locator("a[title='Editar']").first
+        
+        # Hacer clic en él boton editar.
+        primer_boton_editar.click()
 
-        event = Event.objects.last()
-        self.assertIsNotNone(event)
-        self.assertEqual(event.status, Event.Status.ACTIVO)
+        #Cambiar el estado a "Finalizado"
+        self.page.select_option('select[name="status"]', label="Finalizado")
+                
+        #Enviar el formulario
+        self.page.get_by_role("button", name="Guardar Cambios").click()
+    
 
-        # Actualizar evento a FINALIZADO
-        response_finalize = self.client.post(reverse('event_edit', args=[event.id]), {
-            'title': event.title,
-            'description': event.description,
-            'date': scheduled_at.strftime("%Y-%m-%d"),
-            'time': scheduled_at.strftime("%H:%M"),
-            'venueSelect': self.venue.id,
-            'status': Event.Status.FINALIZADO,
-            'categories': [self.category.id],
-        })
+        #self.page.screenshot(path="8.png")
+         # Esperar a que cargue la tabla
+        expect(self.page.locator("table")).to_be_visible()
 
-        event.refresh_from_db()
-        self.assertEqual(event.status, Event.Status.FINALIZADO)
-        self.assertEqual(response_finalize.status_code, 302)
-        # Intentar reactivar evento FINALIZADO (no debería cambiar de estado)
-        response_reactivate = self.client.post(reverse('event_edit', args=[event.id]), {
-            'title': event.title,
-            'description': event.description,
-            'date': scheduled_at.strftime("%Y-%m-%d"),
-            'time': scheduled_at.strftime("%H:%M"),
-            'venueSelect': self.venue.id,
-            'status': Event.Status.ACTIVO,
-            'categories': [self.category.id],
-        })
+        # Buscar el primer botón "Editar"
+        primer_boton_editar = self.page.locator("a[title='Editar']").first
+        
+        # Hacer clic en el boton editar
+        primer_boton_editar.click()
 
-        event.refresh_from_db()
-        self.assertEqual(event.status, Event.Status.FINALIZADO)  # Estado no cambia
-        self.assertEqual(response_reactivate.status_code, 302)
-        event.refresh_from_db()
-        self.assertEqual(event.status, Event.Status.FINALIZADO)
+        # Cambiar el estado a activo
+        self.page.select_option('select[name="status"]', label="Activo")
+        #Hacer click en el boton Guardar Cambios. y verificar que no me deje cambiar.
+        self.page.get_by_role("button", name="Guardar Cambios").click()
+
+        # Buscar el texto exacto que indica el error
+        error_text = "No se puede cambiar el estado de un evento Finalizado."
+
+        # buscar el texto de error
+        error_locator = self.page.locator(f"text={error_text}")
+    
+        # Verificar que el texto está visible (o no visible si no existe)
+        expect(error_locator).to_be_visible()

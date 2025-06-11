@@ -74,6 +74,13 @@ class BaseE2ETest(StaticLiveServerTestCase):
         status=Event.Status.ACTIVO
     )
 
+    def create_refund_request(self,ticket,user):
+        return RefundRequest.objects.create(
+            ticket_code=str(ticket.ticket_code),  
+            reason='no_asistencia',
+            requester=user
+        )
+
     
     def login_user(self, username, password):
         """Método auxiliar para iniciar sesión"""

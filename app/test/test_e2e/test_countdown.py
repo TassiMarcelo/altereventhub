@@ -1,57 +1,38 @@
-import re
-import datetime
+from django.urls import reverse
 from django.utils import timezone
-from playwright.sync_api import expect
+from datetime import timedelta
+from app.models import Event
 from app.test.test_e2e.base import BaseE2ETest
-from app.models import Event, User, Venue
-
+from playwright.sync_api import expect
+import re
 
 class EventCountdownTest(BaseE2ETest):
+
     def setUp(self):
         super().setUp()
-      
-        self.organizer = User.objects.create_user(
-            username="organizador",
-            email="org@example.com",
-            password="password123",
-            is_organizer=True,
-        )
-        self.regular_user = User.objects.create_user(
-            username="usuario",
-            email="user@example.com",
-            password="password123",
-            is_organizer=False,
-        )
-        self.venue = Venue.objects.create(name="Test Venue", address="123 Calle")
+        self.organizer = self.create_test_user(username="organizador", is_organizer=True)
+        self.user = self.create_test_user(username="usuario", is_organizer=False)
+        self.venue = self.create_test_venue(capacity=100)
 
-        future_date = timezone.now() + datetime.timedelta(days=1, hours=2, minutes=30)
-        self.future_event = Event.objects.create(
-            title="Evento con Countdown",
-            description="Evento futuro con contador",
-            scheduled_at=future_date,
+        scheduled_at = timezone.now() + timedelta(days=1)
+        self.event = self.create_test_event(
             organizer=self.organizer,
-            venue=self.venue
+            venue=self.venue,
+            scheduled_at=scheduled_at,
+            title="Evento de prueba"
         )
 
-    def test_countdown_visible_for_regular_user(self):
-        """Verifica que un usuario regular ve el countdown en el detalle del evento"""
+    def test_usuario_ve_countdown(self):
         self.login_user("usuario", "password123")
+        self.page.goto(f"{self.live_server_url}/events/{self.event.id}/")
 
-        self.page.goto(f"{self.live_server_url}/events/{self.future_event.id}/")
-
-        self.page.wait_for_selector("#countdown-text", state="visible")
         countdown = self.page.locator("#countdown-text")
         expect(countdown).to_be_visible()
+        pattern = re.compile(r"Faltan \d+ días?, \d+ horas? y \d+ minutos?")
+        expect(countdown).to_have_text(pattern)
 
-        text = countdown.inner_text()
-        print(f"[DEBUG] Countdown visible con texto: '{text}'")
-
-
-    def test_countdown_not_visible_for_organizer(self):
-        """Verifica que el organizador NO ve el countdown en el detalle del evento"""
+    def test_organizador_no_ve_countdown(self):
         self.login_user("organizador", "password123")
-
-        self.page.goto(f"{self.live_server_url}/events/{self.future_event.id}/")
-
+        self.page.goto(f"{self.live_server_url}/events/{self.event.id}/")
         countdown = self.page.locator("#countdown-text")
-        expect(countdown).to_have_count(0)  
+        expect(countdown).to_have_count(0)

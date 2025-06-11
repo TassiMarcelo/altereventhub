@@ -1,5 +1,5 @@
 name: Deploy continuo
-#Primero verifica si los test de la integracion continua pasa correctamente
+
 on:
   workflow_run:
     workflows: ["Integración continua"]
@@ -27,6 +27,7 @@ jobs:
         with:
           driver: docker-container
           buildkitd-flags: --allow-insecure-entitlement security.insecure
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -40,7 +41,7 @@ jobs:
           if [ "${{ github.event_name }}" = "release" ]; then
             echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
           fi
-        #Construye la imagen de Docker y la pushea
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -55,12 +56,12 @@ jobs:
             org.opencontainers.image.created=${{ steps.get-tags.outputs.date }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-        #Verifica si la imagen de Docker es correcta
+
       - name: Verify Docker image
         run: |
-            docker pull ${{ env.DOCKER_IMAGE }}:${{ env.DATE_TAG }}
-            docker run --rm ${{ env.DOCKER_IMAGE }}:${{ env.DATE_TAG }} python manage.py check
-        #Deploy a Render
+          docker pull ${{ env.DOCKER_IMAGE }}:${{ env.DATE_TAG }}
+          docker run --rm -e DJANGO_SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" ${{ env.DOCKER_IMAGE }}:${{ env.DATE_TAG }} python manage.py check
+
       - name: Trigger deploy on Render
         run: |
           response=$(curl -s -o /dev/null -w "%{http_code}" -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }})

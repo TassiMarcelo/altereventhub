@@ -77,26 +77,26 @@ jobs:
       - name: Run E2E Django tests
         run: python manage.py test app/test/test_e2e
 
-    e2e_playwright_tests:
-      name: E2E Playwright Tests
-      runs-on: ubuntu-latest
-      needs: e2e_django_tests
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+  e2e_playwright_tests:
+    name: E2E Playwright Tests
+    runs-on: ubuntu-latest
+    needs: e2e_django_tests
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        - name: Setup Node.js
-          uses: actions/setup-node@v4
-          with:
-            node-version: '20'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-        - name: Install Playwright dependencies
-          run: |
-            cd e2e
-            npm ci
-            npx playwright install --with-deps
+      - name: Install Playwright dependencies
+        run: |
+          cd e2e
+          npm ci
+          npx playwright install --with-deps
 
-        - name: Run Playwright tests
-          run: |
-            cd e2e
-            npx playwright test
+      - name: Run Playwright tests
+        run: |
+          cd e2e
+          npx playwright test

@@ -57,13 +57,18 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
+      - name: Debug container environment variables
+        run: |
+          echo "Inspeccionando variables de entorno del contenedor:"
+          docker run --rm ${{ env.DOCKER_IMAGE }}:${{ env.DATE_TAG }} env
+
       - name: Verify Docker image
         run: |
           docker pull ${{ env.DOCKER_IMAGE }}:${{ env.DATE_TAG }}
           docker run --rm \
             -e DJANGO_SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" \
-            -e DJANGO_SETTINGS_MODULE="eventhub.settings" \
-            ${{ env.DOCKER_IMAGE }}:${{ env.DATE_TAG }} python manage.py check
+            ${{ env.DOCKER_IMAGE }}:${{ env.DATE_TAG }} \
+            bash -c "DJANGO_SETTINGS_MODULE=eventhub.settings python manage.py check"
 
       - name: Trigger deploy on Render
         run: |
@@ -73,4 +78,3 @@ jobs:
             exit 1
           fi
           echo "Render deploy triggered successfully"
-

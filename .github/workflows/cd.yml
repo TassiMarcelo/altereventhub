@@ -60,7 +60,10 @@ jobs:
       - name: Verify Docker image
         run: |
           docker pull ${{ env.DOCKER_IMAGE }}:${{ env.DATE_TAG }}
-          docker run --rm -e DJANGO_SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" ${{ env.DOCKER_IMAGE }}:${{ env.DATE_TAG }} python manage.py check
+          docker run --rm \
+            -e DJANGO_SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" \
+            -e DJANGO_SETTINGS_MODULE="eventhub.settings.production" \
+            ${{ env.DOCKER_IMAGE }}:${{ env.DATE_TAG }} python manage.py check
 
       - name: Trigger deploy on Render
         run: |
@@ -70,3 +73,4 @@ jobs:
             exit 1
           fi
           echo "Render deploy triggered successfully"
+

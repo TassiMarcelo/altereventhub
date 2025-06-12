@@ -60,4 +60,4 @@ jobs:
           echo "Iniciando despliegue en Render..."
           curl -X POST \
             "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
-            -H "Authorization: Bearer $R
+            -H "Authorization: Bearer $RENDER_API_KEY"

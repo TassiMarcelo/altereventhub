@@ -59,6 +59,13 @@ jobs:
             org.opencontainers.image.version=${{ steps.tags.outputs.RELEASE_TAG || 'dev' }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+      - name: Debug env in Docker
+        run: |
+          docker run --rm \
+            -e DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }} \
+            ${{ env.DOCKER_IMAGE }}:${{ steps.tags.outputs.DATE_TAG }} \
+            env
+
       - name: Verify Docker image
         run: |
           docker pull ${{ env.DOCKER_IMAGE }}:${{ steps.tags.outputs.DATE_TAG }}

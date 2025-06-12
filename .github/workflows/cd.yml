@@ -62,7 +62,9 @@ jobs:
       - name: Verify Docker image
         run: |
           docker pull ${{ env.DOCKER_IMAGE }}:${{ steps.tags.outputs.DATE_TAG }}
-          docker run --rm ${{ env.DOCKER_IMAGE }}:${{ steps.tags.outputs.DATE_TAG }} \
+          docker run --rm \
+            -e DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }} \
+            ${{ env.DOCKER_IMAGE }}:${{ steps.tags.outputs.DATE_TAG }} \
             python manage.py check --deploy
 
       - name: Trigger Render Deploy

@@ -1,5 +1,5 @@
 # ==========================================================
-# Dockerfile para EventHub - Django/Python
+# Dockerfile para EventHub - Django/Python (Versión Corregida)
 # ==========================================================
 
 # ETAPA 1 - Builder
@@ -34,15 +34,14 @@ RUN groupadd -r eventhub && useradd -r -g eventhub eventhub && \
 # Copiar virtualenv
 COPY --from=builder /opt/venv /opt/venv
 
-# Copiar aplicación
+# Copiar aplicación (excluyendo lo especificado en .dockerignore)
 COPY --chown=eventhub:eventhub . .
 
-COPY --chown=eventhub:eventhub .env .env
-
-# Variables de entorno (¡CORRECCIÓN AQUÍ!)
-ENV VIRTUAL_ENV=/opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-ENV DJANGO_SETTINGS_MODULE="eventhub.settings"  # Solo "eventhub.settings"
+# SOBRESCRIBIR CUALQUIER CONFIGURACIÓN PREVIA DE SETTINGS
+ENV VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH" \
+    DJANGO_SETTINGS_MODULE="eventhub.settings" \
+    SETTINGS_MODULE="eventhub.settings"
 
 # Permisos
 RUN chmod -R a+xr /opt/venv
@@ -53,8 +52,9 @@ EXPOSE 8000
 # Usuario no-root
 USER eventhub
 
-# Entrypoint
+# Entrypoint (asegurar permisos)
 COPY --chown=eventhub:eventhub entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
+
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["/opt/venv/bin/gunicorn", "--bind", "0.0.0.0:8000", "eventhub.wsgi:application"]

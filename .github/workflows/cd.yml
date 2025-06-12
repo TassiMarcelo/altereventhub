@@ -1,23 +1,17 @@
-name: Deploy Continuo
+name: Deploy continuo
 
 on:
   workflow_run:
-    workflows: ["Integración continua"]  # Nombre exacto del workflow de CI (case-sensitive)
-    types: [completed]
-  release:
-    types: [published]
-
-env:
-  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/eventhub
+    workflows: ["Integracion continua"]
+    types:
+      - completed
 
 jobs:
-  build-and-deploy:
-    name: Build Docker Image and Deploy
+  build-and-push:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    if: >
-      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') ||
-      github.event_name == 'release'
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
 
     steps:
       - name: Checkout code
@@ -26,58 +20,79 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          driver: docker-container
+          install: true
 
-          
-      - name: Login to Docker Hub
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Generate tags
-        id: tags
-        run: |
-          echo "DATE_TAG=$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
-          if [[ "${{ github.event_name }}" == "release" ]]; then
-            echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
-          fi
-          echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/eventhub
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+            type=sha
+          labels: |
+            org.opencontainers.image.title=EventHub
+            org.opencontainers.image.description=Venta de entradas
+            org.opencontainers.image.vendor=UTN-FRLP
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
+          platforms: linux/amd64
           push: true
-          tags: |
-            ${{ env.DOCKER_IMAGE }}:latest
-            ${{ env.DOCKER_IMAGE }}:${{ steps.tags.outputs.DATE_TAG }}
-            ${{ env.DOCKER_IMAGE }}:${{ steps.tags.outputs.SHORT_SHA }}
-            ${{ steps.tags.outputs.RELEASE_TAG && format('{0}:{1}', env.DOCKER_IMAGE, steps.tags.outputs.RELEASE_TAG) || '' }}
-          labels: |
-            org.opencontainers.image.source=${{ github.repository_url }}
-            org.opencontainers.image.version=${{ steps.tags.outputs.RELEASE_TAG || 'dev' }}
-            org.opencontainers.image.revision=${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            PYTHON_VERSION=3.12
 
-      - name: Debug DJANGO_SECRET_KEY inside container
-        run: |
-          docker run --rm \
-            -e DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }} \
-            ${{ env.DOCKER_IMAGE }}:${{ steps.tags.outputs.DATE_TAG }} \
-            python -c "import os; print('DJANGO_SECRET_KEY:', os.getenv('DJANGO_SECRET_KEY'))"
+  deploy-render:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
 
-      - name: Verify Docker image
-        run: |
-          docker pull ${{ env.DOCKER_IMAGE }}:${{ steps.tags.outputs.DATE_TAG }}
-          docker run --rm \
-            -e DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }} \
-            ${{ env.DOCKER_IMAGE }}:${{ steps.tags.outputs.DATE_TAG }} \
-            python manage.py check --deploy
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Trigger Render Deploy
+      - name: Configure deployment to Render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/eventhub
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.image-tag }}
         run: |
-          curl -X POST \
-            "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+          # Update service configuration with new image
+          echo "Updating Render service configuration..."
+          curl -X PATCH \
+            "https://api.render.com/v1/services/$RENDER_SERVICE_ID" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{"serviceId": "${{ secrets.RENDER_SERVICE_ID }}"}'
+            -d '{
+              "image": {
+                "ownerId": "${{ secrets.DOCKERHUB_USERNAME }}",
+                "imageName": "eventhub",
+                "imageTag": "$(echo "$IMAGE_TAG" | cut -d',' -f1 | tr -d '[]"')"
+              }
+            }'
+
+          # Trigger deployment
+          echo "Triggering deployment..."
+          curl -X POST \
+            "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache": true}'
+
+          echo "Deployment successfully triggered!"

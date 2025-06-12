@@ -1,63 +1,37 @@
-name: Deploy continuo
-
 on:
-  workflow_run:
-    workflows: ["Integracion continua"]
-    types:
-      - completed
+    release:
+        types: [published]
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    deploy:
+        name: Deploy
+        runs-on: ubuntu-latest
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          install: true
+        steps:
+            - name: check out code
+              uses: actions/checkout@v4
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+            - name: Login to Docker Hub
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/eventhub
-          tags: |
-            type=ref,event=tag
-            type=raw,value=latest
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          build-args: |
-            PYTHON_VERSION=3.12
-            DJANGO_SETTINGS_MODULE=eventhub.settings
+            - name: Get the date
+              id: get_date
+              run: echo "date=$(date '+%Y%m%d%H%M%S')" >> $GITHUB_ENV
 
-  deploy-render:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    environment: production
-    
-    steps:
-      - name: Deploy to Render
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
-        run: |
-          echo "Iniciando despliegue en Render..."
-          curl -X POST \
-            "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
-            -H "Authorization: Bearer $R
+            - name: Build and push
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  file: ./Dockerfile
+                  push: true
+                  tags: ${{ secrets.DOCKERHUB_USERNAME }}/eventhub:latest,${{ secrets.DOCKERHUB_USERNAME }}/eventhub:${{ env.date }}
+
+
+            - name: Deploy
+              run: curl ${{ secrets.RENDER_SECRET_KEY }}

@@ -12,7 +12,6 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    environment: entorno
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
 
@@ -31,8 +30,6 @@ jobs:
           registry: docker.io 
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          logout: true
-          
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -56,16 +53,15 @@ jobs:
   deploy-render:
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment: entorno
+    environment: production
 
     steps:
       - name: Deploy to Render
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
-          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
         run: |
-          echo "DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}" >> $GITHUB_ENV
           echo "Iniciando despliegue en Render..."
-          curl -X POST "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
-            -H "Authorization: Bearer ${RENDER_API_KEY}"
+          curl -X POST \
+            "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+            -H "Authorization: Bearer $RENDER_API_KEY"

@@ -53,7 +53,7 @@ COPY --chown=eventhub:eventhub . .
 # Variables de entorno
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-ENV DJANGO_SETTINGS_MODULE="eventhub.settings"
+ENV DJANGO_SETTINGS_MODULE="eventhub.settings.production"
 
 # Dar permisos de ejecucion al entorno
 RUN chmod -R a+xr /opt/venv
